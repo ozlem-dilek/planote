@@ -48,4 +48,6 @@ class AppColors {
 
   static const Color calendarTitle = Color(0xFF78849E);
   static const Color calendarDayText = Color(0xFFD7E0E9);
+
+  static const Color todoFilterText = Color(0xFF2D3A4A);
 }
