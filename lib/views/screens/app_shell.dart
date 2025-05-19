@@ -4,6 +4,7 @@ import '../common_widgets/my_custom_bottom_bar.dart';
 import 'calendar_screen.dart';
 import 'to_do_list_screen.dart';
 import 'stat_screen.dart';
+import 'profile_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -20,7 +21,7 @@ class _AppShellState extends State<AppShell> {
     const TodoListScreen(),
     const CalendarScreen(),
     const IstatistiklerEkrani(),
-    const Placeholder()
+    const ProfilEkrani()
   ];
 
   final List<CustomBottomBarItemData> _barItems = [
