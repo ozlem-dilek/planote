@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../common_widgets/my_common_drawer.dart';
 import '../common_widgets/my_custom_bottom_bar.dart';
+import '../../core/constants/app_colors.dart';
+import 'add_task_screen.dart';
 import 'calendar_screen.dart';
 import 'to_do_list_screen.dart';
 import 'stat_screen.dart';
@@ -21,7 +23,7 @@ class _AppShellState extends State<AppShell> {
     const GorevlerEkrani(),
     const CalendarScreen(),
     const IstatistiklerEkrani(),
-    const ProfilEkrani()
+    const ProfilEkrani(),
   ];
 
   final List<CustomBottomBarItemData> _barItems = [
@@ -44,7 +46,6 @@ class _AppShellState extends State<AppShell> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: MyCommonDrawer(onPageSelected: _onPageSelected),
-
       appBar: null,
       body: SafeArea(
         top: true,
@@ -59,6 +60,21 @@ class _AppShellState extends State<AppShell> {
         onTap: _onPageSelected,
         items: _barItems,
       ),
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddTaskScreen()),
+          );
+        },
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.whiteText,
+        child: const Icon(Icons.add),
+        tooltip: 'Yeni Görev Ekle',
+      )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
