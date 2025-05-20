@@ -50,4 +50,25 @@ class AppColors {
   static const Color calendarDayText = Color(0xFFD7E0E9);
 
   static const Color todoFilterText = Color(0xFF2D3A4A);
+
+  static const List<Color> defaultCategoryColors = [
+    Color(0xFFF44336), // Kırmızı
+    Color(0xFFE91E63), // Pembe
+    Color(0xFF9C27B0), // Mor
+    Color(0xFF673AB7), // Koyu Mor
+    Color(0xFF3F51B5), // İndigo
+    Color(0xFF2196F3), // Mavi
+    Color(0xFF03A9F4), // Açık Mavi
+    Color(0xFF00BCD4), // Camgöbeği
+    Color(0xFF009688), // Deniz Mavisi
+    Color(0xFF4CAF50), // Yeşil
+    Color(0xFF8BC34A), // Açık Yeşil
+    Color(0xFFCDDC39), // Limon Yeşili
+    Color(0xFFFFEB3B), // Sarı
+    Color(0xFFFFC107), // Kehribar
+    Color(0xFFFF9800), // Turuncu
+    Color(0xFF49312C), // Kahverengi
+    Color(0xFF9E9E9E), // Gri
+    Color(0xFF607D8B), // Mavi Gri
+  ];
 }
