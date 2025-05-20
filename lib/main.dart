@@ -6,6 +6,22 @@ import 'core/theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('tr_TR', null); // Türkçe tarih formatları için
+
+  // hive initialization
+  await Hive.initFlutter();
+
+  if (!Hive.isAdapterRegistered(CategoryModelAdapter().typeId)) {
+    Hive.registerAdapter(CategoryModelAdapter());
+  }
+  if (!Hive.isAdapterRegistered(TaskModelAdapter().typeId)) {
+    Hive.registerAdapter(TaskModelAdapter());
+  }
+
+  // TODO: Hive kutularını burada veya servislerde açılabilri.
+  // await Hive.openBox<CategoryModel>('categories');
+  // await Hive.openBox<TaskModel>('tasks');
+
+
   runApp(const MyApp());
 }
 

@@ -48,12 +48,12 @@ class _GorevlerEkraniState extends State<GorevlerEkrani> {
 
   // Örnek görevler TODO:(Tarih ve kategoriye göre filtrelenecek)
   final List<Task> _allTasks = [
-    Task(id: '1', title: "Y-y-y-yess y'all", isCompleted: true, categoryId: 'work', dueDate: DateTime.now()),
-    Task(id: '2', title: 'feelin', isCompleted: true, categoryId: 'personal', dueDate: DateTime.now().add(const Duration(hours: 1))),
-    Task(id: '3', title: 'funky', isCompleted: false, categoryId: 'work', dueDate: DateTime.now().add(const Duration(hours: 2))),
+    Task(id: '1', title: "--", isCompleted: true, categoryId: 'work', dueDate: DateTime.now()),
+    Task(id: '2', title: 'dvsdvsvx', isCompleted: true, categoryId: 'personal', dueDate: DateTime.now().add(const Duration(hours: 1))),
+    Task(id: '3', title: 'fusfdvcscscscnky', isCompleted: false, categoryId: 'work', dueDate: DateTime.now().add(const Duration(hours: 2))),
     Task(id: '4', title: '**', isCompleted: false, categoryId: 'work', dueDate: DateTime.now().subtract(const Duration(days:1))), // Dünkü görev
-    Task(id: '5', title: 'fresh', isCompleted: true, categoryId: 'shopping', dueDate: DateTime.now().add(const Duration(days: 2))),
-    Task(id: '6', title: "y'all", isCompleted: true, categoryId: 'work', dueDate: DateTime.now().add(const Duration(days: 3))),
+    Task(id: '5', title: 'frscscscsaesdfvdh', isCompleted: true, categoryId: 'shopping', dueDate: DateTime.now().add(const Duration(days: 2))),
+    Task(id: '6', title: "yascscall", isCompleted: true, categoryId: 'work', dueDate: DateTime.now().add(const Duration(days: 3))),
     Task(id: '7', title: '**', isCompleted: false, categoryId: 'personal', dueDate: DateTime.now().add(const Duration(days: 6))),
     Task(id: '8', title: '***', isCompleted: false, categoryId: 'shopping', dueDate: DateTime.now().add(const Duration(days:1))),
     Task(id: '9', title: '***', isCompleted: true, categoryId: 'personal', dueDate: DateTime.now().add(const Duration(days:8))), // Gelecek hafta dışı
