@@ -84,7 +84,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget _buildTopHeaderSection(BuildContext context) {
     String currentMonthYear = "${_getMonthName(_focusedDay.month)} ${_focusedDay.year}";
 
-    String dayAndTitle = "${_getDayName(_focusedDay.weekday, locale: 'en')} Calendar"; // Daha dinamik yapılabilir
+    String dayAndTitle = "${_getDayName(_focusedDay.weekday, locale: 'en')}"; // Daha dinamik yapılabilir
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 12, 15),

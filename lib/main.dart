@@ -2,15 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
 import 'core/theme/app_theme.dart';
 import 'views/screens/app_shell.dart';
+
 import 'models/category_model.dart';
 import 'models/task_model.dart';
+
 import 'services/category_service.dart';
 import 'providers/category_provider.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/task_service.dart';
 import 'providers/task_provider.dart';
+import 'providers/calendar_provider.dart';
+
 
 const String categoriesBoxName = 'categoriesBox';
 const String tasksBoxName = 'tasksBox';
@@ -31,6 +36,8 @@ void main() async {
   await Hive.openBox<CategoryModel>(categoriesBoxName);
   await Hive.openBox<TaskModel>(tasksBoxName);
 
+  // TODO: app ilk kez çalıştığında varsayılan kategorileri eklenebilir (CategoryService içinde)
+
   runApp(const MyApp());
 }
 
@@ -47,13 +54,15 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<CategoryProvider>(
           create: (context) => CategoryProvider(context.read<CategoryService>()),
         ),
-        Provider<TaskService>(create: (_) => TaskService()),
+        Provider<TaskService>(
+          create: (_) => TaskService(),
+        ),
         ChangeNotifierProvider<TaskProvider>(
           create: (context) => TaskProvider(context.read<TaskService>()),
         ),
-
-        // TODO: TaskService & TaskProvider eklenecek
-
+        ChangeNotifierProvider<CalendarProvider>(
+          create: (context) => CalendarProvider(context.read<TaskService>()),
+        ),
       ],
       child: MaterialApp(
         title: 'Planote App',
@@ -69,7 +78,6 @@ class MyApp extends StatelessWidget {
           Locale('en', ''),
         ],
         locale: const Locale('tr', 'TR'),
-
         home: const AppShell(),
       ),
     );
