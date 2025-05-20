@@ -2,6 +2,13 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter/material.dart';
 import 'package:planote/views/screens/app_shell.dart';
 import 'core/theme/app_theme.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'models/category_model.dart';
+import 'models/task_model.dart';
+
+const String categoriesBoxName = 'categoriesBox';
+const String tasksBoxName = 'tasksBox';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,9 +24,11 @@ void main() async {
     Hive.registerAdapter(TaskModelAdapter());
   }
 
-  // TODO: Hive kutularını burada veya servislerde açılabilri.
-  // await Hive.openBox<CategoryModel>('categories');
-  // await Hive.openBox<TaskModel>('tasks');
+  await Hive.openBox<CategoryModel>(categoriesBoxName);
+  await Hive.openBox<TaskModel>(tasksBoxName);
+
+  // TODO: Hive kutuları burada veya servislerde açılabilri.
+
 
 
   runApp(const MyApp());

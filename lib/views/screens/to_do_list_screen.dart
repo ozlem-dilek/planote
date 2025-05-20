@@ -44,7 +44,7 @@ class _GorevlerEkraniState extends State<GorevlerEkrani> {
     // TODO: Kullanıcının eklediği kategoriler buraya gelecek
   ];
 
-  String _selectedCategoryId = 'all'; // Başlangıçta "Tümü" seçili
+  String _selectedCategoryId = 'all';
 
   // Örnek görevler TODO:(Tarih ve kategoriye göre filtrelenecek)
   final List<Task> _allTasks = [
