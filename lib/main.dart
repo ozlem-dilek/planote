@@ -36,7 +36,7 @@ void main() async {
   await Hive.openBox<CategoryModel>(categoriesBoxName);
   await Hive.openBox<TaskModel>(tasksBoxName);
 
-  // TODO: app ilk kez çalıştığında varsayılan kategorileri eklenebilir (CategoryService içinde)
+  // TODO: app ilk kez çalışınca varsayılan kategoriler eklenebilir (CategoryService içinde)
 
   runApp(const MyApp());
 }
@@ -61,7 +61,10 @@ class MyApp extends StatelessWidget {
           create: (context) => TaskProvider(context.read<TaskService>()),
         ),
         ChangeNotifierProvider<CalendarProvider>(
-          create: (context) => CalendarProvider(context.read<TaskService>()),
+          create: (context) => CalendarProvider(
+            context.read<TaskService>(),
+            context.read<CategoryService>(),
+          ),
         ),
       ],
       child: MaterialApp(

@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../common_widgets/custom_tab_chip_bar.dart';
+import '../../providers/calendar_provider.dart';
+import '../../models/task_model.dart';
+import '../../models/category_model.dart';
+import '../../providers/category_provider.dart';
+
+// import 'edit_task_screen.dart'; // TODO: task düzenleme için
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -12,79 +20,61 @@ class CalendarScreen extends StatefulWidget {
 class _CalendarScreenState extends State<CalendarScreen> {
   int _selectedChipIndex = 1;
   final List<String> _chipLabels = ["Planning", "Calendar", "Snow/Gorev"];
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedDay = _focusedDay;
-  }
-
-  //TODO: Odaklanılan ayı değiştirmek için (Provider'a taşınacak)
-  void _onMonthNavigate(bool previous) {
-    setState(() {
-      if (previous) {
-        _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1, 1);
-      } else {
-        _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 1);
-      }
-      // Odak değişince seçili günü de o ayın ilk günü yapabiliriz veya null yapabiliriz
-      _selectedDay = _focusedDay;
-      // TODO: Provider ile takvim verilerini yeniden yükle
-    });
-  }
-
-  // TODO: Bir güne tıklandığında (Provider'a taşınacak)
-  void _onDaySelected(DateTime day) {
-    setState(() {
-      _selectedDay = day;
-      _focusedDay = day; // Takvim o güne odaklansın
-      // TODO: Provider ile seçili günün olaylarını yükle
-    });
-  }
-
-  //TODO:  Bir çipe tıklandığında (Provider'a taşınacak)
-  void _onChipSelected(int index) {
-    setState(() {
-      _selectedChipIndex = index;
-      // TODO: Provider ile içeriği bu çipe göre filtrele
-      print("Chip seçildi: ${_chipLabels[index]}");
-    });
-  }
 
   String _getDayName(int weekday, {String locale = 'en'}) {
     if (locale == 'tr') {
       const days = ["", "PZT", "SAL", "ÇAR", "PER", "CUM", "CMT", "PAZ"];
-      return days[weekday];
+      if (weekday >=1 && weekday <=7) return days[weekday];
+      return "";
     }
     const days = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     if (weekday == 7) return "Sun";
-    return days[weekday];
+    if (weekday >=1 && weekday <=6) return days[weekday];
+    return "";
   }
 
+  String _getMonthName(int month, {String locale = 'tr'}) {
+    if (locale == 'tr') {
+      const monthNames = ["", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+      if (month >=1 && month <=12) return monthNames[month];
+      return "";
+    }
+    const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    if (month >=1 && month <=12) return monthNames[month];
+    return "";
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Bu ekran AppShell içinde kullanılacağı için kendi Scaffold'u yok.
-    // AppShell SafeArea'yı zaten sağlıyor.
+    final calendarProvider = context.watch<CalendarProvider>();
+    final DateTime focusedDay = calendarProvider.focusedDay;
+    final DateTime selectedDay = calendarProvider.selectedDay;
+
     return Container(
       color: AppColors.screenBackground,
       child: Column(
         children: [
-          _buildTopHeaderSection(context),
-          _buildCalendarGrid(context),
+          _buildTopHeaderSection(context, focusedDay),
+          _buildCalendarGrid(context, focusedDay, selectedDay),
           const _WavyDecorationSection(),
-          _buildEventsListSection(context),
+          _buildEventsListSection(context, calendarProvider.tasksForSelectedDay, calendarProvider.isLoadingTasks, calendarProvider.errorLoadingTasks),
         ],
       ),
     );
   }
 
-  Widget _buildTopHeaderSection(BuildContext context) {
-    String currentMonthYear = "${_getMonthName(_focusedDay.month)} ${_focusedDay.year}";
+  Widget _buildTopHeaderSection(BuildContext context, DateTime focusedDayForDisplay) {
+    final calendarProvider = context.read<CalendarProvider>();
+    String currentMonthYear = "${_getMonthName(focusedDayForDisplay.month)} ${focusedDayForDisplay.year}";
+    String dayName = "";
+    try {
+      dayName = DateFormat('EEEE', 'tr_TR').format(focusedDayForDisplay); // Dinamik gün adı Türkçe
+      dayName = dayName[0].toUpperCase() + dayName.substring(1); // İlk harfi büyük
+    } catch (e) {
+      dayName = "Calendar"; // Hata durumunda varsayılan
+    }
+    String title = "$dayName Calendar";
 
-    String dayAndTitle = "${_getDayName(_focusedDay.weekday, locale: 'en')}"; // Daha dinamik yapılabilir
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 12, 15),
@@ -99,33 +89,27 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 child: RichText(
                   text: TextSpan(
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: AppColors.calendarTitle,
-                      height: 1.1,
+                        color: AppColors.calendarTitle,
+                        height: 1.1,
+                        fontSize: 26
                     ),
                     children: <TextSpan>[
-                      TextSpan(text: '$dayAndTitle\n', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 26)),
+                      TextSpan(text: '$title\n', style: const TextStyle(fontWeight: FontWeight.bold)),
                       TextSpan(text: currentMonthYear, style: TextStyle(fontWeight: FontWeight.w300, fontSize: 20, color: AppColors.secondaryText.withOpacity(0.8))),
                     ],
                   ),
                 ),
               ),
-              // Ay navigasyon okları
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
                     icon: Icon(Icons.chevron_left_rounded, size: 34, color: AppColors.secondaryText.withOpacity(0.7)),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    tooltip: 'Önceki Ay',
-                    onPressed: () => _onMonthNavigate(true),
+                    onPressed: () => calendarProvider.changeFocusedDay(DateTime(focusedDayForDisplay.year, focusedDayForDisplay.month - 1, 1)),
                   ),
                   IconButton(
                     icon: Icon(Icons.chevron_right_rounded, size: 34, color: AppColors.secondaryText.withOpacity(0.7)),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    tooltip: 'Sonraki Ay',
-                    onPressed: () => _onMonthNavigate(false),
+                    onPressed: () => calendarProvider.changeFocusedDay(DateTime(focusedDayForDisplay.year, focusedDayForDisplay.month + 1, 1)),
                   ),
                 ],
               ),
@@ -141,10 +125,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: CustomTabChip(
-                    label: _chipLabels[index],
-                    isSelected: _selectedChipIndex == index,
-                    onTap: () => _onChipSelected(index),
-                  ),
+                      label: _chipLabels[index],
+                      isSelected: _selectedChipIndex == index,
+                      onTap: () {
+                        setState(() { _selectedChipIndex = index; });
+                      }),
                 );
               },
             ),
@@ -154,19 +139,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildCalendarGrid(BuildContext context) {
-    final List<String> dayAbbreviations = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  Widget _buildCalendarGrid(BuildContext context, DateTime focusedDayForGrid, DateTime currentSelectedDay) {
+    final calendarProvider = context.watch<CalendarProvider>();
+    final List<String> dayAbbreviations = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
 
-    // Takvim matrisi için günler (Bu mantık Provider/Service katmanında daha detaylı olmalı)
-    final firstDayOfMonth = DateTime(_focusedDay.year, _focusedDay.month, 1);
-    final daysInMonth = DateTime(_focusedDay.year, _focusedDay.month + 1, 0).day;
-    int startingDayOffset = firstDayOfMonth.weekday % 7;
+    final firstDayOfMonth = DateTime(focusedDayForGrid.year, focusedDayForGrid.month, 1);
+    final daysInMonth = DateTime(focusedDayForGrid.year, focusedDayForGrid.month + 1, 0).day;
+
+    int startingDayOffset = firstDayOfMonth.weekday - 1; // Pazartesi = 0 ... Pazar = 6
 
     List<DateTime?> monthDays = List.generate(startingDayOffset, (_) => null);
     for (int i = 0; i < daysInMonth; i++) {
-      monthDays.add(DateTime(_focusedDay.year, _focusedDay.month, i + 1));
+      monthDays.add(DateTime(focusedDayForGrid.year, focusedDayForGrid.month, i + 1));
     }
-    int totalCells = 35; // Genellikle 5 hafta
+    int totalCells = 35;
     if (monthDays.length > 28 && startingDayOffset + daysInMonth > 35) {
       totalCells = 42;
     }
@@ -177,6 +163,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       monthDays = monthDays.sublist(0, totalCells);
     }
 
+    final markers = calendarProvider.monthlyTaskMarkers;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
@@ -194,36 +181,56 @@ class _CalendarScreenState extends State<CalendarScreen> {
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              childAspectRatio: 1.0,
-              crossAxisSpacing: 6,
-              mainAxisSpacing: 6,
+              crossAxisCount: 7, childAspectRatio: 0.85, crossAxisSpacing: 6, mainAxisSpacing: 6,
             ),
             itemCount: monthDays.length,
             itemBuilder: (context, index) {
               final day = monthDays[index];
-              if (day == null) return Container(); // Boş günler
+              if (day == null) return Container();
 
-              bool isSelected = _selectedDay != null && DateUtils.isSameDay(day, _selectedDay);
+              bool isSelected = DateUtils.isSameDay(day, currentSelectedDay);
               bool isToday = DateUtils.isSameDay(day, DateTime.now());
-              // TODO: Olayları olan günleri Provider'dan alıp işaretle
+
+              final dayOnlyForMarker = DateTime(day.year, day.month, day.day);
+              List<Color>? dayMarkers = markers[dayOnlyForMarker];
 
               return GestureDetector(
-                onTap: () => _onDaySelected(day),
+                onTap: () => context.read<CalendarProvider>().selectDay(day, day),
                 child: Container(
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.calendarSelectedDayBackground : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                     border: isToday && !isSelected ? Border.all(color: AppColors.calendarTodayBorder.withOpacity(0.6), width: 1.5) : null,
                   ),
-                  child: Text(
-                    '${day.day}',
-                    style: TextStyle(
-                      color: isSelected ? AppColors.primary : (isToday ? AppColors.calendarTodayBorder : AppColors.primaryText.withOpacity(0.8)),
-                      fontWeight: isSelected || isToday ? FontWeight.bold : FontWeight.normal,
-                      fontSize: 14,
-                    ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${day.day}',
+                        style: TextStyle(
+                          color: isSelected ? AppColors.primary : (isToday ? AppColors.calendarTodayBorder : AppColors.primaryText.withOpacity(0.8)),
+                          fontWeight: isSelected || isToday ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (dayMarkers != null && dayMarkers.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: dayMarkers.take(3).map((color) => Container(
+                            width: 5, height: 5,
+                            margin: const EdgeInsets.symmetric(horizontal: 1.2),
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                            ),
+                          )).toList(),
+                        ),
+                      ] else ... [
+                        const SizedBox(height: 3 + 5), // Noktalar için ayrılan boşluğu koru
+                      ]
+                    ],
                   ),
                 ),
               );
@@ -234,29 +241,86 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildEventsListSection(BuildContext context) {
-    // TODO: Seçili güne ait olaylar Provider ile Hive'dan çekilip burada listelenecek
+  Widget _buildEventsListSection(BuildContext context, List<TaskModel> tasks, bool isLoading, String? error) {
+    final calendarProvider = context.read<CalendarProvider>();
+
+    if (isLoading) {
+      return const Expanded(child: Center(child: CircularProgressIndicator()));
+    }
+    if (error != null) {
+      return Expanded(child: Center(child: Text(error, style: const TextStyle(color: AppColors.error))));
+    }
+    if (tasks.isEmpty) {
+      return Expanded(
+        child: Container(
+          width: double.infinity,
+          color: AppColors.wavyGreenish.withOpacity(0.7),
+          alignment: Alignment.center,
+          child: Text("Bu gün için planlanmış görev yok.", style: TextStyle(color: AppColors.primaryText.withOpacity(0.7))),
+        ),
+      );
+    }
+
     return Expanded(
       child: Container(
-        width: double.infinity,
-
         color: AppColors.wavyGreenish.withOpacity(0.7),
-        alignment: Alignment.topCenter,
-        padding: const EdgeInsets.only(top: 10),
+        child: ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          itemCount: tasks.length,
+          itemBuilder: (context, index) {
+            final task = tasks[index];
+
+            CategoryModel? category;
+            if(task.categoryId.isNotEmpty) {
+              category = context.read<CategoryProvider>().getCategoryById(task.categoryId);
+            }
+            final Color categoryColor = category != null ? Color(category.colorValue) : Colors.grey;
+
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8.0),
+              elevation: 1.0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              child: ListTile(
+                leading: Container(width: 5, height: 40, color: categoryColor),
+                title: Text(
+                  task.title,
+                  style: TextStyle(
+                    decoration: task.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                    color: task.isCompleted ? AppColors.secondaryText : AppColors.primaryText,
+                    fontWeight: task.isCompleted ? FontWeight.normal : FontWeight.w500,
+                  ),
+                ),
+                subtitle: task.startDateTime != null || task.endDateTime != null
+                    ? Text(
+                  "${task.startDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.startDateTime!) : ''}${task.startDateTime != null && task.endDateTime != null ? ' - ' : ''}${task.endDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.endDateTime!) : ''}".trim(),
+                  style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
+                )
+                    : null,
+                trailing: IconButton(
+                  icon: Icon(
+                    task.isCompleted ? Icons.check_box_outlined : Icons.check_box_outline_blank_rounded,
+                    color: task.isCompleted ? AppColors.primary : AppColors.secondaryText,
+                  ),
+                  onPressed: () {
+                    calendarProvider.toggleTaskCompletionOnCalendar(task.id);
+                  },
+                ),
+                onTap: () {
+                  // TODO: edit task ekranını aç
+                  // Navigator.push(context, MaterialPageRoute(builder: (_) => EditTaskScreen(taskToEdit: task)));
+                },
+              ),
+            );
+          },
+        ),
       ),
     );
-  }
-
-  String _getMonthName(int month) {
-    const monthNames = ["", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-    // İngilizce için:
-    // const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    return monthNames[month];
   }
 }
 
 class _WavyDecorationSection extends StatelessWidget {
-  const _WavyDecorationSection();
+  const _WavyDecorationSection({super.key});
   @override
   Widget build(BuildContext context) {
     return SizedBox(
