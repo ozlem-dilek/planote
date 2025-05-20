@@ -59,6 +59,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
           onTap: () {
             context.read<TaskProvider>().loadTasksForCategory('all');
           },
+          activeCategoryColor: taskProvider.selectedCategoryId == 'all' ? AppColors.primary : null,
         ),
       ),
     );
@@ -228,72 +229,92 @@ class _TodoListScreenState extends State<TodoListScreen> {
   }
 
   Widget _buildTaskItem(BuildContext context, TaskModel task, Color categoryColor, bool isDueSoon) {
-    return InkWell(
-      onTap: () {
-        // print("Görev tıklandı: ${task.title}");
+    return Dismissible(
+      key: Key(task.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (direction) {
+        Provider.of<TaskProvider>(context, listen: false).deleteTask(task.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("${task.title} silindi."),
+          ),
+        );
       },
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
-        child: Row(
-          children: [
-            Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                  color: categoryColor.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: categoryColor, width: 1.5)),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task.title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.primaryText,
-                      decoration: task.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                      decorationColor: AppColors.secondaryText,
-                    ),
-                  ),
-                  if (task.endDateTime != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2.0),
-                      child: Text(
-                        DateFormat('dd MMM, HH:mm', 'tr_TR').format(task.endDateTime!),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDueSoon && !task.isCompleted ? AppColors.error : AppColors.secondaryText,
-                          fontWeight: isDueSoon && !task.isCompleted ? FontWeight.bold : FontWeight.normal,
-                        ),
+      background: Container(
+        color: Colors.red.shade700,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        alignment: Alignment.centerRight,
+        child: const Icon(
+          Icons.delete_sweep_outlined,
+          color: Colors.white,
+        ),
+      ),
+      child: InkWell(
+        onTap: () {
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+          child: Row(
+            children: [
+              Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                    color: categoryColor.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: categoryColor, width: 1.5)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.primaryText,
+                        decoration: task.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                        decorationColor: AppColors.secondaryText,
                       ),
                     ),
-                ],
-              ),
-            ),
-            if (isDueSoon && !task.isCompleted)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Icon(Icons.warning_amber_rounded, color: AppColors.error.withOpacity(0.8), size: 20),
-              ),
-            InkWell(
-              onTap: () {
-                context.read<TaskProvider>().toggleTaskCompletion(task.id);
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: Icon(
-                  task.isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                  color: task.isCompleted ? AppColors.primary : AppColors.secondaryText.withOpacity(0.5),
-                  size: 26,
+                    if (task.endDateTime != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2.0),
+                        child: Text(
+                          DateFormat('dd MMM, HH:mm', 'tr_TR').format(task.endDateTime!),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDueSoon && !task.isCompleted ? AppColors.error : AppColors.secondaryText,
+                            fontWeight: isDueSoon && !task.isCompleted ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              if (isDueSoon && !task.isCompleted)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Icon(Icons.warning_amber_rounded, color: AppColors.error.withOpacity(0.8), size: 20),
+                ),
+              InkWell(
+                onTap: () {
+                  context.read<TaskProvider>().toggleTaskCompletion(task.id);
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: Icon(
+                    task.isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                    color: task.isCompleted ? AppColors.primary : AppColors.secondaryText.withOpacity(0.5),
+                    size: 26,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
