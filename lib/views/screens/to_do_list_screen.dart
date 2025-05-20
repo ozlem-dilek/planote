@@ -7,6 +7,7 @@ import '../../models/category_model.dart';
 import '../../models/task_model.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/task_provider.dart';
+import 'edit_task_screen.dart';
 
 class TodoListScreen extends StatefulWidget {
   const TodoListScreen({super.key});
@@ -231,16 +232,17 @@ class _TodoListScreenState extends State<TodoListScreen> {
   Widget _buildTaskItem(BuildContext context, TaskModel task, Color categoryColor, bool isDueSoon) {
     return Dismissible(
       key: Key(task.id),
-      direction: DismissDirection.endToStart,
-      onDismissed: (direction) {
-        Provider.of<TaskProvider>(context, listen: false).deleteTask(task.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("${task.title} silindi."),
-          ),
-        );
-      },
+      direction: DismissDirection.horizontal,
       background: Container(
+        color: Colors.blue.shade600,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        alignment: Alignment.centerLeft,
+        child: const Icon(
+          Icons.edit_note_outlined,
+          color: Colors.white,
+        ),
+      ),
+      secondaryBackground: Container(
         color: Colors.red.shade700,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         alignment: Alignment.centerRight,
@@ -249,8 +251,58 @@ class _TodoListScreenState extends State<TodoListScreen> {
           color: Colors.white,
         ),
       ),
+      confirmDismiss: (DismissDirection direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EditTaskScreen(taskToEdit: task),
+            ),
+          );
+          return false;
+        } else if (direction == DismissDirection.endToStart) {
+          final bool? confirm = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext dialogContext) {
+              return AlertDialog(
+                title: const Text('Görevi Sil'),
+                content: Text('"${task.title}" adlı görevi silmek istediğinize emin misiniz?'),
+                actions: <Widget>[
+                  TextButton(
+                    child: const Text('İptal'),
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
+                    child: const Text('Sil'),
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                  ),
+                ],
+              );
+            },
+          );
+          return confirm ?? false;
+        }
+        return false;
+      },
+      onDismissed: (DismissDirection direction) {
+        if (direction == DismissDirection.endToStart) {
+          Provider.of<TaskProvider>(context, listen: false).deleteTask(task.id);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("${task.title} silindi."),
+            ),
+          );
+        }
+      },
       child: InkWell(
         onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EditTaskScreen(taskToEdit: task),
+            ),
+          );
         },
         borderRadius: BorderRadius.circular(8),
         child: Container(
