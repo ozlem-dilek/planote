@@ -6,21 +6,55 @@ import '../services/task_service.dart';
 class TaskProvider extends ChangeNotifier {
   final TaskService _taskService;
 
-  List<TaskModel> _tasks = [];
+  List<TaskModel> _allFetchedTasks = [];
+  List<TaskModel> _filteredAndSortedTasks = [];
+  String _selectedCategoryId = 'all';
+
   bool _isLoading = false;
   String? _error;
   final Uuid _uuid = const Uuid();
 
-  List<TaskModel> get tasks => _tasks;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-
-  TaskProvider(this._taskService) {
-    loadAllTasks();
+  List<TaskModel> get filteredTasks => _filteredAndSortedTasks;
+  List<TaskModel> get todaysTasks {
+    final now = DateTime.now();
+    return _filteredAndSortedTasks.where((task) =>
+    task.endDateTime != null &&
+        DateUtils.isSameDay(task.endDateTime, now)
+    ).toList();
   }
 
-  void _sortTasks() {
-    _tasks.sort((a, b) {
+  List<TaskModel> get upcomingTasks {
+    final now = DateTime.now();
+    final oneWeekFromNow = now.add(const Duration(days: 7));
+    return _filteredAndSortedTasks.where((task) =>
+    task.endDateTime != null &&
+        !DateUtils.isSameDay(task.endDateTime, now) &&
+        task.endDateTime!.isAfter(now) &&
+        task.endDateTime!.isBefore(oneWeekFromNow)
+    ).toList();
+  }
+
+  List<TaskModel> get otherTasks {
+    final now = DateTime.now();
+    final oneWeekFromNow = now.add(const Duration(days: 7));
+    return _filteredAndSortedTasks.where((task) =>
+    (task.endDateTime == null ||
+        task.endDateTime!.isBefore(now) ||
+        task.endDateTime!.isAfter(oneWeekFromNow)) &&
+        !task.isCompleted
+    ).toList();
+  }
+
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  String get selectedCategoryId => _selectedCategoryId;
+
+  TaskProvider(this._taskService) {
+    loadTasksForCategory('all');
+  }
+
+  void _sortTasks(List<TaskModel> tasks) {
+    tasks.sort((a, b) {
       if (a.endDateTime == null && b.endDateTime == null) return 0;
       if (a.endDateTime == null) return 1;
       if (b.endDateTime == null) return -1;
@@ -28,15 +62,24 @@ class TaskProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> loadAllTasks() async {
+  Future<void> loadTasksForCategory(String categoryId) async {
+    _selectedCategoryId = categoryId;
     _isLoading = true;
     _error = null;
     notifyListeners();
+
     try {
-      _tasks = _taskService.getAllTasks();
-      _sortTasks();
+      if (categoryId.toLowerCase() == 'all' || categoryId.toLowerCase() == 'tümü') {
+        _allFetchedTasks = _taskService.getAllTasks();
+      } else {
+        _allFetchedTasks = _taskService.getTasksByCategory(categoryId);
+      }
+      _filteredAndSortedTasks = List.from(_allFetchedTasks);
+      _sortTasks(_filteredAndSortedTasks);
     } catch (e) {
       _error = "Görevler yüklenirken bir sorun oluştu.";
+      _allFetchedTasks = [];
+      _filteredAndSortedTasks = [];
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -68,7 +111,7 @@ class TaskProvider extends ChangeNotifier {
 
     try {
       await _taskService.addNewTask(newTask);
-      await loadAllTasks();
+      await loadTasksForCategory(_selectedCategoryId);
     } catch (e) {
       _error = "Yeni görev eklenirken bir sorun oluştu.";
       _isLoading = false;
@@ -82,7 +125,7 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _taskService.updateTask(task);
-      await loadAllTasks();
+      await loadTasksForCategory(_selectedCategoryId);
     } catch (e) {
       _error = "Görev güncellenirken bir sorun oluştu.";
       _isLoading = false;
@@ -92,21 +135,24 @@ class TaskProvider extends ChangeNotifier {
 
   Future<void> toggleTaskCompletion(String taskId) async {
     _error = null;
+    final originalTasks = List<TaskModel>.from(_filteredAndSortedTasks);
+    int taskIndex = _filteredAndSortedTasks.indexWhere((task) => task.id == taskId);
+
+    if (taskIndex != -1) {
+      _filteredAndSortedTasks[taskIndex].isCompleted = !_filteredAndSortedTasks[taskIndex].isCompleted;
+      notifyListeners();
+    }
+
     try {
-      final TaskModel? taskToUpdate = _tasks.firstWhere((task) => task.id == taskId, orElse: () => _tasks.first );
-
-
       await _taskService.toggleTaskCompletion(taskId);
-      int taskIndex = _tasks.indexWhere((task) => task.id == taskId);
-      if (taskIndex != -1) {
-        _tasks[taskIndex].isCompleted = !_tasks[taskIndex].isCompleted;
-        _sortTasks();
-        notifyListeners();
-      } else {
-        await loadAllTasks();
+      if (taskIndex == -1) { // Should not happen if optimistic update was successful
+        await loadTasksForCategory(_selectedCategoryId);
       }
     } catch (e) {
       _error = "Görev durumu güncellenirken bir sorun oluştu.";
+      if (taskIndex != -1) {
+        _filteredAndSortedTasks = originalTasks; // Revert optimistic update
+      }
       notifyListeners();
     }
   }
@@ -117,24 +163,9 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _taskService.deleteTask(taskId);
-      await loadAllTasks();
+      await loadTasksForCategory(_selectedCategoryId);
     } catch (e) {
       _error = "Görev silinirken bir sorun oluştu.";
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> loadTasksByCategory(String categoryId) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-    try {
-      _tasks = _taskService.getTasksByCategory(categoryId);
-      _sortTasks();
-    } catch (e) {
-      _error = "Kategoriye göre görevler yüklenirken bir sorun oluştu.";
-    } finally {
       _isLoading = false;
       notifyListeners();
     }
