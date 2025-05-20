@@ -73,6 +73,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             onTap: () {
               context.read<TaskProvider>().loadTasksForCategory(category.id);
             },
+            activeCategoryColor: Color(category.colorValue),
           ),
         ),
       );

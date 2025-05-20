@@ -8,6 +8,7 @@ class CustomTabChip extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final double? fontSize;
   final BorderRadius? borderRadius;
+  final Color? activeCategoryColor;
 
   const CustomTabChip({
     super.key,
@@ -17,37 +18,49 @@ class CustomTabChip extends StatelessWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     this.fontSize = 13,
     this.borderRadius,
+    this.activeCategoryColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color selectedBackgroundColor = AppColors.calendarChipSelectedText.withOpacity(0.12);
-    final Color selectedTextColor = AppColors.calendarChipSelectedText;
-    final Color selectedBorderColor = AppColors.calendarChipSelectedText;
-
-    final Color unselectedBackgroundColor = AppColors.chipBarBackground.withOpacity(0.5);
-    final Color unselectedTextColor = AppColors.calendarChipUnselectedText;
-    final Color unselectedBorderColor = AppColors.secondaryText.withOpacity(0.4);
-
+    Color effectiveBackgroundColor;
+    Color effectiveTextColor;
+    Color effectiveBorderColor;
     final FontWeight selectedFontWeight = FontWeight.bold;
     final FontWeight unselectedFontWeight = FontWeight.w500;
+
+    if (isSelected) {
+      if (activeCategoryColor != null) {
+        effectiveBackgroundColor = activeCategoryColor!.withOpacity(0.15);
+        effectiveTextColor = activeCategoryColor!;
+        effectiveBorderColor = activeCategoryColor!;
+      } else {
+        effectiveBackgroundColor = AppColors.primary.withOpacity(0.12);
+        effectiveTextColor = AppColors.primary;
+        effectiveBorderColor = AppColors.primary;
+      }
+    } else {
+      effectiveBackgroundColor = AppColors.chipBarBackground.withOpacity(0.5);
+      effectiveTextColor = AppColors.secondaryText;
+      effectiveBorderColor = AppColors.secondaryText.withOpacity(0.4);
+    }
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: padding,
         decoration: BoxDecoration(
-          color: isSelected ? selectedBackgroundColor : unselectedBackgroundColor,
+          color: effectiveBackgroundColor,
           borderRadius: borderRadius ?? BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? selectedBorderColor : unselectedBorderColor,
+            color: effectiveBorderColor,
             width: 1.2,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? selectedTextColor : unselectedTextColor,
+            color: effectiveTextColor,
             fontWeight: isSelected ? selectedFontWeight : unselectedFontWeight,
             fontSize: fontSize,
           ),
