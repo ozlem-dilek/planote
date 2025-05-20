@@ -8,7 +8,9 @@ import 'models/category_model.dart';
 import 'models/task_model.dart';
 import 'services/category_service.dart';
 import 'providers/category_provider.dart';
-// TODO: TaskService ve TaskProvider da buraya eklenecek
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'services/task_service.dart';
+import 'providers/task_provider.dart';
 
 const String categoriesBoxName = 'categoriesBox';
 const String tasksBoxName = 'tasksBox';
@@ -45,6 +47,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<CategoryProvider>(
           create: (context) => CategoryProvider(context.read<CategoryService>()),
         ),
+        Provider<TaskService>(create: (_) => TaskService()),
+        ChangeNotifierProvider<TaskProvider>(
+          create: (context) => TaskProvider(context.read<TaskService>()),
+        ),
 
         // TODO: TaskService & TaskProvider eklenecek
 
@@ -53,6 +59,17 @@ class MyApp extends StatelessWidget {
         title: 'Planote App',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('tr', 'TR'),
+          Locale('en', ''),
+        ],
+        locale: const Locale('tr', 'TR'),
+
         home: const AppShell(),
       ),
     );
