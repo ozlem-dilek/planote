@@ -3,24 +3,42 @@ import '../models/task_model.dart';
 import '../services/task_service.dart';
 import '../services/category_service.dart';
 import '../models/category_model.dart';
+import 'task_provider.dart';
 
 class CalendarProvider extends ChangeNotifier {
   final TaskService _taskService;
   final CategoryService _categoryService;
+  final TaskProvider _taskProvider;
 
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay;
   List<TaskModel> _tasksForSelectedDay = [];
-
   Map<DateTime, List<Color>> _monthlyTaskMarkers = {};
 
   bool _isLoadingTasks = false;
   String? _errorLoadingTasks;
   bool _isLoadingMarkers = false;
 
-  CalendarProvider(this._taskService, this._categoryService) : _selectedDay = DateTime.now() {
+  CalendarProvider(this._taskService, this._categoryService, this._taskProvider)
+      : _selectedDay = DateTime.now() {
+    _taskProvider.addListener(_onTaskProviderChanged);
+    _initializeCalendar();
+  }
+
+  void _initializeCalendar() {
     loadTasksForDay(_selectedDay);
     loadTaskMarkersForMonth(_focusedDay);
+  }
+
+  void _onTaskProviderChanged() {
+    loadTaskMarkersForMonth(_focusedDay);
+    loadTasksForDay(_selectedDay);
+  }
+
+  @override
+  void dispose() {
+    _taskProvider.removeListener(_onTaskProviderChanged);
+    super.dispose();
   }
 
   DateTime get focusedDay => _focusedDay;
@@ -48,7 +66,8 @@ class CalendarProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _tasksForSelectedDay = _taskService.getTasksForDate(day);
+      List<TaskModel> allTasksForDay = _taskService.getTasksForDate(day);
+      _tasksForSelectedDay = allTasksForDay.where((task) => !task.isCompleted).toList();
       _sortTasks(_tasksForSelectedDay);
     } catch (e) {
       _errorLoadingTasks = "Görevler yüklenirken bir sorun oluştu.";
@@ -69,37 +88,38 @@ class CalendarProvider extends ChangeNotifier {
       final allCategories = _categoryService.getAllCategories();
 
       for (var task in tasksInMonth) {
-        if (task.endDateTime != null) {
-          DateTime currentDate = task.startDateTime ?? task.endDateTime!;
-          DateTime taskEndDate = task.endDateTime ?? task.startDateTime!;
+        if (task.isCompleted) continue;
 
+        DateTime currentDateToMark = task.startDateTime ?? task.endDateTime!;
+        DateTime taskLoopEndDate = task.endDateTime ?? task.startDateTime!;
 
-          DateTime dayToMark = DateUtils.dateOnly(currentDate);
-          DateTime endDayToMark = DateUtils.dateOnly(taskEndDate);
-          DateTime firstDayOfCurrentMonth = DateUtils.dateOnly(DateTime(monthDate.year, monthDate.month, 1));
-          DateTime lastDayOfCurrentMonth = DateUtils.dateOnly(DateTime(monthDate.year, monthDate.month + 1, 0));
+        DateTime dayToMark = DateUtils.dateOnly(currentDateToMark);
+        DateTime endDayToMark = DateUtils.dateOnly(taskLoopEndDate);
 
-          while(!dayToMark.isAfter(endDayToMark)){
-            if(!dayToMark.isBefore(firstDayOfCurrentMonth) && !dayToMark.isAfter(lastDayOfCurrentMonth)){
-              CategoryModel? category;
-              try {
-                category = allCategories.firstWhere((cat) => cat.id == task.categoryId);
-              } catch (e) {
-                category = null;
-              }
-              final color = category != null ? Color(category.colorValue) : Colors.grey;
+        DateTime firstDayOfCurrentMonth = DateUtils.dateOnly(DateTime(monthDate.year, monthDate.month, 1));
+        DateTime lastDayOfCurrentMonth = DateUtils.dateOnly(DateTime(monthDate.year, monthDate.month + 1, 0));
 
-              if (newMarkers.containsKey(dayToMark)) {
-                if (!newMarkers[dayToMark]!.contains(color)) {
-                  newMarkers[dayToMark]!.add(color);
-                }
-              } else {
-                newMarkers[dayToMark] = [color];
-              }
+        while(!dayToMark.isAfter(endDayToMark)){
+          if(!dayToMark.isBefore(firstDayOfCurrentMonth) && !dayToMark.isAfter(lastDayOfCurrentMonth)){
+            CategoryModel? category;
+            try {
+              category = allCategories.firstWhere((cat) => cat.id == task.categoryId);
+            } catch (e) {
+              category = null;
             }
-            if(dayToMark.isAtSameMomentAs(endDayToMark)) break;
-            dayToMark = DateUtils.addDaysToDate(dayToMark, 1);
+            final color = category != null ? Color(category.colorValue) : Colors.grey;
+            final normalizedDayKey = DateTime(dayToMark.year, dayToMark.month, dayToMark.day);
+
+            if (newMarkers.containsKey(normalizedDayKey)) {
+              if (!newMarkers[normalizedDayKey]!.contains(color)) {
+                newMarkers[normalizedDayKey]!.add(color);
+              }
+            } else {
+              newMarkers[normalizedDayKey] = [color];
+            }
           }
+          if(DateUtils.isSameDay(dayToMark, endDayToMark)) break;
+          dayToMark = DateUtils.addDaysToDate(dayToMark, 1);
         }
       }
       _monthlyTaskMarkers = newMarkers;
@@ -111,16 +131,14 @@ class CalendarProvider extends ChangeNotifier {
   }
 
   void selectDay(DateTime newSelectedDay, DateTime newFocusedDay) {
-    bool needsMarkerReload = !DateUtils.isSameMonth(_focusedDay, newFocusedDay);
+    bool monthChanged = !DateUtils.isSameMonth(_focusedDay, newFocusedDay);
 
-    if (!DateUtils.isSameDay(_selectedDay, newSelectedDay)) {
-      _selectedDay = newSelectedDay;
-    }
+    _selectedDay = newSelectedDay;
     _focusedDay = newFocusedDay;
 
     loadTasksForDay(newSelectedDay);
 
-    if (needsMarkerReload) {
+    if (monthChanged) {
       loadTaskMarkersForMonth(newFocusedDay);
     } else {
       notifyListeners();
@@ -137,24 +155,18 @@ class CalendarProvider extends ChangeNotifier {
   }
 
   Future<void> toggleTaskCompletionOnCalendar(String taskId) async {
+    _isLoadingTasks = true;
     _errorLoadingTasks = null;
-    final originalTasks = List<TaskModel>.from(_tasksForSelectedDay);
-    int taskIndex = _tasksForSelectedDay.indexWhere((task) => task.id == taskId);
-
-    if (taskIndex != -1) {
-      _tasksForSelectedDay[taskIndex].isCompleted = !_tasksForSelectedDay[taskIndex].isCompleted;
-      _sortTasks(_tasksForSelectedDay);
-      notifyListeners();
-    }
+    notifyListeners();
 
     try {
       await _taskService.toggleTaskCompletion(taskId);
-      await loadTaskMarkersForMonth(_focusedDay);
+      await loadTasksForDay(_selectedDay);
+      // await loadTaskMarkersForMonth(_focusedDay); //  _onTaskProviderChanged tarafından tetiklenecek
     } catch (e) {
       _errorLoadingTasks = "Görev durumu güncellenirken hata oluştu.";
-      if (taskIndex != -1) {
-        _tasksForSelectedDay = originalTasks;
-      }
+    } finally {
+      _isLoadingTasks = false;
       notifyListeners();
     }
   }

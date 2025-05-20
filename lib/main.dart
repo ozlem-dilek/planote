@@ -36,8 +36,6 @@ void main() async {
   await Hive.openBox<CategoryModel>(categoriesBoxName);
   await Hive.openBox<TaskModel>(tasksBoxName);
 
-  // TODO: app ilk kez çalışınca varsayılan kategoriler eklenebilir (CategoryService içinde)
-
   runApp(const MyApp());
 }
 
@@ -64,6 +62,7 @@ class MyApp extends StatelessWidget {
           create: (context) => CalendarProvider(
             context.read<TaskService>(),
             context.read<CategoryService>(),
+            context.read<TaskProvider>(),
           ),
         ),
       ],

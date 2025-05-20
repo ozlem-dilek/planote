@@ -96,10 +96,11 @@ class _TodoListScreenState extends State<TodoListScreen> {
     final taskProvider = context.watch<TaskProvider>();
     final categoryProvider = context.watch<CategoryProvider>();
 
+    final List<TaskModel> pastDueTasks = taskProvider.pastDueUncompletedTasks;
     final List<TaskModel> todaysTasks = taskProvider.todaysTasks;
     final List<TaskModel> upcomingTasks = taskProvider.upcomingTasks;
     final List<TaskModel> otherPendingTasks = taskProvider.otherTasks;
-    final bool allTaskListsEmpty = todaysTasks.isEmpty && upcomingTasks.isEmpty && otherPendingTasks.isEmpty;
+    final bool allTaskListsEmpty = pastDueTasks.isEmpty && todaysTasks.isEmpty && upcomingTasks.isEmpty && otherPendingTasks.isEmpty;
 
     return Column(
       children: [
@@ -160,6 +161,10 @@ class _TodoListScreenState extends State<TodoListScreen> {
                 : ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
+                if (pastDueTasks.isNotEmpty) ...[
+                  _buildTaskGroup(context, "Geçmiş Görevler", pastDueTasks, categoryProvider),
+                  const SizedBox(height: 20),
+                ],
                 if (todaysTasks.isNotEmpty)
                   _buildTaskGroup(context, "Bugünkü Görevler", todaysTasks, categoryProvider),
                 if (upcomingTasks.isNotEmpty) ...[
@@ -194,7 +199,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
               child: Text(
                 title,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.primaryText,
+                    color: title == "Geçmiş Görevler" ? AppColors.error : AppColors.primaryText,
                     fontWeight: FontWeight.bold,
                     fontSize: 18),
               ),
@@ -219,7 +224,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
                       task.endDateTime!.isAfter(DateTime.now().subtract(const Duration(days:1))) &&
                       task.endDateTime!.isBefore(DateTime.now().add(const Duration(days: 2)));
 
-                  return _buildTaskItem(context, task, categoryColor, isDueSoon);
+                  bool isPastDue = title == "Geçmiş Görevler";
+
+                  return _buildTaskItem(context, task, categoryColor, isDueSoon, isPastDue);
                 },
                 separatorBuilder: (context, index) => const Divider(height: 10, color: Colors.transparent),
               ),
@@ -229,7 +236,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     );
   }
 
-  Widget _buildTaskItem(BuildContext context, TaskModel task, Color categoryColor, bool isDueSoon) {
+  Widget _buildTaskItem(BuildContext context, TaskModel task, Color categoryColor, bool isDueSoon, bool isPastDue) {
     return Dismissible(
       key: Key(task.id),
       direction: DismissDirection.horizontal,
@@ -335,18 +342,18 @@ class _TodoListScreenState extends State<TodoListScreen> {
                       Padding(
                         padding: const EdgeInsets.only(top: 2.0),
                         child: Text(
-                          DateFormat('dd MMM, HH:mm', 'tr_TR').format(task.endDateTime!),
+                          DateFormat('dd MMM yyyy, HH:mm', 'tr_TR').format(task.endDateTime!),
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDueSoon && !task.isCompleted ? AppColors.error : AppColors.secondaryText,
-                            fontWeight: isDueSoon && !task.isCompleted ? FontWeight.bold : FontWeight.normal,
+                            color: (isDueSoon || isPastDue) && !task.isCompleted ? AppColors.error : AppColors.secondaryText,
+                            fontWeight: (isDueSoon || isPastDue) && !task.isCompleted ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
                       ),
                   ],
                 ),
               ),
-              if (isDueSoon && !task.isCompleted)
+              if ((isDueSoon || isPastDue) && !task.isCompleted)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
                   child: Icon(Icons.warning_amber_rounded, color: AppColors.error.withOpacity(0.8), size: 20),

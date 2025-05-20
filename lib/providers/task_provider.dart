@@ -15,6 +15,16 @@ class TaskProvider extends ChangeNotifier {
   final Uuid _uuid = const Uuid();
 
   List<TaskModel> get filteredTasks => _filteredAndSortedTasks;
+
+  List<TaskModel> get pastDueUncompletedTasks {
+    final today = DateUtils.dateOnly(DateTime.now());
+    return _filteredAndSortedTasks.where((task) =>
+    !task.isCompleted &&
+        task.endDateTime != null &&
+        DateUtils.dateOnly(task.endDateTime!).isBefore(today)
+    ).toList();
+  }
+
   List<TaskModel> get todaysTasks {
     final now = DateTime.now();
     return _filteredAndSortedTasks.where((task) =>
@@ -25,24 +35,35 @@ class TaskProvider extends ChangeNotifier {
 
   List<TaskModel> get upcomingTasks {
     final now = DateTime.now();
-    final oneWeekFromNow = now.add(const Duration(days: 7));
-    return _filteredAndSortedTasks.where((task) =>
-    task.endDateTime != null &&
-        !DateUtils.isSameDay(task.endDateTime, now) &&
-        task.endDateTime!.isAfter(now) &&
-        task.endDateTime!.isBefore(oneWeekFromNow)
+    final today = DateUtils.dateOnly(now);
+    final oneWeekFromNow = today.add(const Duration(days: 7));
+    return _filteredAndSortedTasks.where((task) {
+      if (task.endDateTime == null) return false;
+      final taskEndDateOnly = DateUtils.dateOnly(task.endDateTime!);
+      return !DateUtils.isSameDay(task.endDateTime, now) &&
+          taskEndDateOnly.isAfter(today) &&
+          (taskEndDateOnly.isBefore(oneWeekFromNow) || DateUtils.isSameDay(taskEndDateOnly, oneWeekFromNow));
+    }
     ).toList();
   }
 
   List<TaskModel> get otherTasks {
     final now = DateTime.now();
-    final oneWeekFromNow = now.add(const Duration(days: 7));
-    return _filteredAndSortedTasks.where((task) =>
-    (task.endDateTime == null ||
-        task.endDateTime!.isBefore(now) ||
-        task.endDateTime!.isAfter(oneWeekFromNow)) &&
-        !task.isCompleted
-    ).toList();
+    final today = DateUtils.dateOnly(now);
+    final endOfUpcomingWindow = today.add(const Duration(days: 7));
+
+    return _filteredAndSortedTasks.where((task) {
+      if (task.isCompleted) return false;
+      if (task.endDateTime == null) return true;
+
+      final taskEndDateOnly = DateUtils.dateOnly(task.endDateTime!);
+
+      if (taskEndDateOnly.isBefore(today)) return false;
+      if (DateUtils.isSameDay(task.endDateTime, now)) return false;
+      if (!taskEndDateOnly.isAfter(endOfUpcomingWindow)) return false;
+
+      return true;
+    }).toList();
   }
 
   bool get isLoading => _isLoading;
