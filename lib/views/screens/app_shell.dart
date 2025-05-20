@@ -20,7 +20,7 @@ class _AppShellState extends State<AppShell> {
   int _selectedIndex = 0;
 
   static final List<Widget> _pages = <Widget>[
-    const GorevlerEkrani(),
+    const TodoListScreen(),
     const CalendarScreen(),
     const IstatistiklerEkrani(),
     const ProfilEkrani(),

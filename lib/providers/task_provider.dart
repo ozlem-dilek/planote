@@ -134,25 +134,16 @@ class TaskProvider extends ChangeNotifier {
   }
 
   Future<void> toggleTaskCompletion(String taskId) async {
+    _isLoading = true;
     _error = null;
-    final originalTasks = List<TaskModel>.from(_filteredAndSortedTasks);
-    int taskIndex = _filteredAndSortedTasks.indexWhere((task) => task.id == taskId);
-
-    if (taskIndex != -1) {
-      _filteredAndSortedTasks[taskIndex].isCompleted = !_filteredAndSortedTasks[taskIndex].isCompleted;
-      notifyListeners();
-    }
+    notifyListeners();
 
     try {
       await _taskService.toggleTaskCompletion(taskId);
-      if (taskIndex == -1) { // Should not happen if optimistic update was successful
-        await loadTasksForCategory(_selectedCategoryId);
-      }
+      await loadTasksForCategory(_selectedCategoryId);
     } catch (e) {
       _error = "Görev durumu güncellenirken bir sorun oluştu.";
-      if (taskIndex != -1) {
-        _filteredAndSortedTasks = originalTasks; // Revert optimistic update
-      }
+      _isLoading = false;
       notifyListeners();
     }
   }

@@ -1,100 +1,102 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../common_widgets/custom_tab_chip_bar.dart';
+import '../../models/category_model.dart';
+import '../../models/task_model.dart';
+import '../../providers/category_provider.dart';
+import '../../providers/task_provider.dart';
 
-// Örnek veri yapıları TODO:(Provider ve Hive ile değiştirilecek)
-class Category {
-  final String id;
-  final String name;
-  final Color color;
-
-  Category({required this.id, required this.name, required this.color});
-}
-
-class Task {
-  final String id;
-  final String title;
-  final bool isCompleted;
-  final String categoryId;
-  final DateTime dueDate;
-
-  Task({
-    required this.id,
-    required this.title,
-    required this.isCompleted,
-    required this.categoryId,
-    required this.dueDate,
-  });
-}
-
-class GorevlerEkrani extends StatefulWidget {
-  const GorevlerEkrani({super.key});
+class TodoListScreen extends StatefulWidget {
+  const TodoListScreen({super.key});
 
   @override
-  State<GorevlerEkrani> createState() => _GorevlerEkraniState();
+  State<TodoListScreen> createState() => _TodoListScreenState();
 }
 
-class _GorevlerEkraniState extends State<GorevlerEkrani> {
-  // TODO: Bu veriler Provider ve Servis Katmanı ile Hive'dan gelecek
-  final List<Category> _categories = [
-    Category(id: 'all', name: 'Tümü', color: Colors.grey),
-    Category(id: 'work', name: 'Work', color: AppColors.primaryDark),
-    Category(id: 'personal', name: 'Personal', color: Colors.orange),
-    Category(id: 'shopping', name: 'Shopping', color: Colors.lightBlue),
-    // TODO: Kullanıcının eklediği kategoriler buraya gelecek
-  ];
+class _TodoListScreenState extends State<TodoListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+      if (taskProvider.filteredTasks.isEmpty && !taskProvider.isLoading) {
+        taskProvider.loadTasksForCategory(taskProvider.selectedCategoryId);
+      }
+      final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
+      if (categoryProvider.categories.isEmpty && !categoryProvider.isLoading) {
+        categoryProvider.loadCategories();
+      }
+    });
+  }
 
-  String _selectedCategoryId = 'all';
+  Widget _buildCategoryChips(BuildContext context) {
+    final categoryProvider = context.watch<CategoryProvider>();
+    final taskProvider = context.watch<TaskProvider>();
 
-  // Örnek görevler TODO:(Tarih ve kategoriye göre filtrelenecek)
-  final List<Task> _allTasks = [
-    Task(id: '1', title: "--", isCompleted: true, categoryId: 'work', dueDate: DateTime.now()),
-    Task(id: '2', title: 'dvsdvsvx', isCompleted: true, categoryId: 'personal', dueDate: DateTime.now().add(const Duration(hours: 1))),
-    Task(id: '3', title: 'fusfdvcscscscnky', isCompleted: false, categoryId: 'work', dueDate: DateTime.now().add(const Duration(hours: 2))),
-    Task(id: '4', title: '**', isCompleted: false, categoryId: 'work', dueDate: DateTime.now().subtract(const Duration(days:1))), // Dünkü görev
-    Task(id: '5', title: 'frscscscsaesdfvdh', isCompleted: true, categoryId: 'shopping', dueDate: DateTime.now().add(const Duration(days: 2))),
-    Task(id: '6', title: "yascscall", isCompleted: true, categoryId: 'work', dueDate: DateTime.now().add(const Duration(days: 3))),
-    Task(id: '7', title: '**', isCompleted: false, categoryId: 'personal', dueDate: DateTime.now().add(const Duration(days: 6))),
-    Task(id: '8', title: '***', isCompleted: false, categoryId: 'shopping', dueDate: DateTime.now().add(const Duration(days:1))),
-    Task(id: '9', title: '***', isCompleted: true, categoryId: 'personal', dueDate: DateTime.now().add(const Duration(days:8))), // Gelecek hafta dışı
-  ];
-
-  List<Task> _getFilteredTasks() {
-    // TODO: Bu filtreleme mantığı Provider'da veya Service'de olacak
-    List<Task> tasksToShow;
-    if (_selectedCategoryId == 'all') {
-      tasksToShow = _allTasks;
-    } else {
-      tasksToShow = _allTasks.where((task) => task.categoryId == _selectedCategoryId).toList();
+    if (categoryProvider.isLoading && categoryProvider.categories.isEmpty) {
+      return const SizedBox(
+        height: 42,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
     }
-    return tasksToShow;
-  }
+    if (categoryProvider.error != null && categoryProvider.categories.isEmpty) {
+      return SizedBox(
+        height: 42,
+        child: Center(child: Text("Kategoriler yüklenemedi", style: TextStyle(color: AppColors.error))),
+      );
+    }
 
-  List<Task> _getTodaysTasks(List<Task> filteredTasks) {
-    final now = DateTime.now();
-    return filteredTasks.where((task) =>
-    task.dueDate.year == now.year &&
-        task.dueDate.month == now.month &&
-        task.dueDate.day == now.day
-    ).toList();
-  }
+    List<Widget> chips = [];
 
-  List<Task> _getUpcomingTasks(List<Task> filteredTasks) {
-    final now = DateTime.now();
-    final oneWeekFromNow = now.add(const Duration(days: 7));
-    return filteredTasks.where((task) =>
-    !DateUtils.isSameDay(task.dueDate, now) && // Bugünün görevlerini tekrar gösterme
-        task.dueDate.isAfter(now) &&
-        task.dueDate.isBefore(oneWeekFromNow)
-    ).toList();
-  }
+    chips.add(
+      Padding(
+        padding: const EdgeInsets.only(right: 8.0),
+        child: CustomTabChip(
+          label: "Tümü",
+          isSelected: taskProvider.selectedCategoryId == 'all',
+          onTap: () {
+            context.read<TaskProvider>().loadTasksForCategory('all');
+          },
+        ),
+      ),
+    );
 
+    for (var category in categoryProvider.categories) {
+      chips.add(
+        Padding(
+          padding: const EdgeInsets.only(right: 8.0),
+          child: CustomTabChip(
+            label: category.name,
+            isSelected: taskProvider.selectedCategoryId == category.id,
+            onTap: () {
+              context.read<TaskProvider>().loadTasksForCategory(category.id);
+            },
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 42,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        children: chips,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filteredTasks = _getFilteredTasks();
-    final todaysTasks = _getTodaysTasks(filteredTasks);
-    final upcomingTasks = _getUpcomingTasks(filteredTasks);
+    final taskProvider = context.watch<TaskProvider>();
+    final categoryProvider = context.watch<CategoryProvider>();
+
+    final List<TaskModel> todaysTasks = taskProvider.todaysTasks;
+    final List<TaskModel> upcomingTasks = taskProvider.upcomingTasks;
+    final List<TaskModel> otherPendingTasks = taskProvider.otherTasks;
+    final bool allTaskListsEmpty = todaysTasks.isEmpty && upcomingTasks.isEmpty && otherPendingTasks.isEmpty;
 
     return Column(
       children: [
@@ -108,15 +110,13 @@ class _GorevlerEkraniState extends State<GorevlerEkrani> {
           ),
           child: Row(
             children: [
-              Builder(
-                  builder: (buttonContext) {
-                    return IconButton(
-                      icon: const Icon(Icons.menu, color: AppColors.primaryText, size: 28),
-                      onPressed: () => Scaffold.of(buttonContext).openDrawer(),
-                      tooltip: 'Menüyü Aç',
-                    );
-                  }
-              ),
+              Builder(builder: (buttonContext) {
+                return IconButton(
+                  icon: const Icon(Icons.menu, color: AppColors.primaryText, size: 28),
+                  onPressed: () => Scaffold.of(buttonContext).openDrawer(),
+                  tooltip: 'Menüyü Aç',
+                );
+              }),
               const Text(
                 'To-Do List',
                 style: TextStyle(
@@ -129,76 +129,58 @@ class _GorevlerEkraniState extends State<GorevlerEkrani> {
             ],
           ),
         ),
-
         Container(
           color: AppColors.todoAppBarBackground,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: SizedBox(
-            height: 42,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: CustomTabChip(
-                    label: category.name,
-                    isSelected: _selectedCategoryId == category.id,
-                    onTap: () {
-                      setState(() {
-                        _selectedCategoryId = category.id;
-                      });
-                      // TODO: Provider ile görev listesini yeniden yükle/filtrele
-                    },
-                    // CustomTabChip'e renk parametresi eklenebilir
-                    // backgroundColor: category.color.withOpacity(0.2),
-                    // selectedColor: category.color,
-                  ),
-                );
-              },
-            ),
-          ),
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
+          child: _buildCategoryChips(context),
         ),
-
         Expanded(
           child: Container(
             color: AppColors.screenBackground,
-            child: ListView( // Ana kaydırma
+            child: taskProvider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : taskProvider.error != null
+                ? Center(child: Text("Hata: ${taskProvider.error}", style: const TextStyle(color: AppColors.error)))
+                : (allTaskListsEmpty
+                ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    taskProvider.selectedCategoryId == 'all'
+                        ? "Harika! Hiç göreviniz yok gibi görünüyor."
+                        : "Bu kategoride gösterilecek görev yok.",
+                    style: TextStyle(color: AppColors.secondaryText, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+            )
+                : ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
                 if (todaysTasks.isNotEmpty)
-                  _buildTaskGroup(context, "Bugünkü Görevler", todaysTasks),
+                  _buildTaskGroup(context, "Bugünkü Görevler", todaysTasks, categoryProvider),
                 if (upcomingTasks.isNotEmpty) ...[
                   const SizedBox(height: 20),
-                  _buildTaskGroup(context, "Yaklaşan Görevler (1 Hafta)", upcomingTasks),
+                  _buildTaskGroup(context, "Yaklaşan Görevler (1 Hafta)", upcomingTasks, categoryProvider),
                 ],
-                if (todaysTasks.isEmpty && upcomingTasks.isEmpty && _selectedCategoryId != 'all')
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 40.0),
-                    child: Center(child: Text("Bu kategoride gösterilecek görev yok.", style: TextStyle(color: AppColors.secondaryText))),
-                  ),
-                if (todaysTasks.isEmpty && upcomingTasks.isEmpty && _selectedCategoryId == 'all')
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 40.0),
-                    child: Center(child: Text("Harika! Hiç göreviniz yok gibi görünüyor.", style: TextStyle(color: AppColors.secondaryText))),
-                  ),
-                // TODO: "Tüm Görevler" veya "Diğer Görevler" gibi ek gruplar olabilir
+                if (otherPendingTasks.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  _buildTaskGroup(context, "Diğer Bekleyen Görevler", otherPendingTasks, categoryProvider),
+                ]
               ],
-            ),
+            )),
           ),
         ),
-        // TODO: FloatingActionButton AppShell seviyesinde veya sayfa bazlı eklenebilir.
-        // Şimdilik FAB eklemiyorum, onu AppShell'e eklemek daha merkezi olabilir.
       ],
     );
   }
 
-  Widget _buildTaskGroup(BuildContext context, String title, List<Task> tasks) {
+  Widget _buildTaskGroup(BuildContext context, String title, List<TaskModel> tasks, CategoryProvider categoryProvider) {
     return Card(
-      elevation: 1.0, // Hafif gölge
-      margin: const EdgeInsets.only(bottom: 0),
+      elevation: 1.0,
+      margin: const EdgeInsets.only(bottom: 16.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      color: AppColors.cardBackground,
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -211,40 +193,47 @@ class _GorevlerEkraniState extends State<GorevlerEkrani> {
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: AppColors.primaryText,
                     fontWeight: FontWeight.bold,
-                    fontSize: 18
-                ),
+                    fontSize: 18),
               ),
             ),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: tasks.length,
-              itemBuilder: (context, index) {
-                final task = tasks[index];
-                final categoryColor = _categories.firstWhere(
-                        (cat) => cat.id == task.categoryId,
-                    orElse: () => Category(id: 'unknown', name: 'Unknown', color: Colors.grey)
-                ).color;
+            if (tasks.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10.0),
+                child: Text("Bu grupta görev yok.", style: TextStyle(color: AppColors.secondaryText)),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: tasks.length,
+                itemBuilder: (context, index) {
+                  final task = tasks[index];
+                  final category = categoryProvider.getCategoryById(task.categoryId);
+                  final categoryColor = category != null ? Color(category.colorValue) : AppColors.disabled;
 
-                return _buildTaskItem(context, task, categoryColor);
-              },
-              separatorBuilder: (context, index) => const Divider(height: 12, color: Colors.transparent),
-            ),
+                  bool isDueSoon = task.endDateTime != null &&
+                      !task.isCompleted &&
+                      task.endDateTime!.isAfter(DateTime.now().subtract(const Duration(days:1))) &&
+                      task.endDateTime!.isBefore(DateTime.now().add(const Duration(days: 2)));
+
+                  return _buildTaskItem(context, task, categoryColor, isDueSoon);
+                },
+                separatorBuilder: (context, index) => const Divider(height: 10, color: Colors.transparent),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTaskItem(BuildContext context, Task task, Color categoryColor) {
+  Widget _buildTaskItem(BuildContext context, TaskModel task, Color categoryColor, bool isDueSoon) {
     return InkWell(
       onTap: () {
-        // TODO: Görev detayını göster / düzenle
-        print("Görev tıklandı: ${task.title}");
+        // print("Görev tıklandı: ${task.title}");
       },
       borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
         child: Row(
           children: [
             Container(
@@ -253,41 +242,49 @@ class _GorevlerEkraniState extends State<GorevlerEkrani> {
               decoration: BoxDecoration(
                   color: categoryColor.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: categoryColor, width: 1.5)
-              ),
+                  border: Border.all(color: categoryColor, width: 1.5)),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                task.title,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.primaryText.withOpacity(0.85),
-                  decoration: task.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                  decorationColor: AppColors.secondaryText,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.primaryText,
+                      decoration: task.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                      decorationColor: AppColors.secondaryText,
+                    ),
+                  ),
+                  if (task.endDateTime != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2.0),
+                      child: Text(
+                        DateFormat('dd MMM, HH:mm', 'tr_TR').format(task.endDateTime!),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDueSoon && !task.isCompleted ? AppColors.error : AppColors.secondaryText,
+                          fontWeight: isDueSoon && !task.isCompleted ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
+            if (isDueSoon && !task.isCompleted)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: Icon(Icons.warning_amber_rounded, color: AppColors.error.withOpacity(0.8), size: 20),
+              ),
             InkWell(
               onTap: () {
-                setState(() {
-                  // Bu sadece UI'da değiştirir, Todo: Provider ve Hive'a kaydedilmeli
-                  final updatedTask = Task(
-                      id: task.id,
-                      title: task.title,
-                      isCompleted: !task.isCompleted,
-                      categoryId: task.categoryId,
-                      dueDate: task.dueDate);
-                  int taskIndex = _allTasks.indexWhere((t) => t.id == task.id);
-                  if (taskIndex != -1) {
-                    _allTasks[taskIndex] = updatedTask;
-                  }
-                });
-                // TODO: Provider -> taskProvider.toggleTaskCompletion(task);
+                context.read<TaskProvider>().toggleTaskCompletion(task.id);
               },
+              borderRadius: BorderRadius.circular(20),
               child: Padding(
-                padding: const EdgeInsets.all(4.0),
+                padding: const EdgeInsets.all(6.0),
                 child: Icon(
                   task.isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
                   color: task.isCompleted ? AppColors.primary : AppColors.secondaryText.withOpacity(0.5),
