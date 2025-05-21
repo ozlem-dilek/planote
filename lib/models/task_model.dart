@@ -1,6 +1,5 @@
-// lib/models/task_model.dart
 import 'package:hive/hive.dart';
-part 'task_model.g.dart'; // build_runner ile üretilecek
+part 'task_model.g.dart';
 
 @HiveType(typeId: 1)
 class TaskModel extends HiveObject {
@@ -28,6 +27,9 @@ class TaskModel extends HiveObject {
   @HiveField(7)
   DateTime? startDateTime;
 
+  @HiveField(8) // YENİ ALAN
+  DateTime? completedAt;
+
   TaskModel({
     required this.id,
     required this.title,
@@ -37,5 +39,6 @@ class TaskModel extends HiveObject {
     this.isCompleted = false,
     required this.categoryId,
     this.createdAt,
+    this.completedAt,
   });
 }

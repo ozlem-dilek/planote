@@ -48,6 +48,11 @@ class TaskService {
     final task = _tasksBox.get(taskId);
     if (task != null) {
       task.isCompleted = !task.isCompleted;
+      if (task.isCompleted) {
+        task.completedAt = DateTime.now();
+      } else {
+        task.completedAt = null;
+      }
       await task.save();
     }
   }
