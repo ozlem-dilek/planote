@@ -57,6 +57,7 @@ dev_dependencies:
   fl_chart: ^1.0.0
   hive_generator:
   build_runner:
+  shared_preferences:
 
 
 # For information on the generic Dart part of this file, see the

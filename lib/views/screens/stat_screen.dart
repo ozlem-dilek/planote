@@ -91,7 +91,11 @@ class IstatistiklerEkrani extends StatelessWidget {
                     chartContent: _buildWeeklyActivityChart(statsProvider),
                   ),
                   const SizedBox(height: 20),
-                  // TODO: Aylık Tamamlanan Görev Sayısı Grafiği
+                  _buildStatCard(
+                    context: context,
+                    title: "Aylık Tamamlanan Görev Sayısı",
+                    chartContent: _buildMonthlyCompletionLineChart(statsProvider),
+                  ),
                 ],
               ),
             );
@@ -296,6 +300,141 @@ class IstatistiklerEkrani extends StatelessWidget {
                     ),
                   ],
                 );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonthlyCompletionLineChart(StatsProvider statsProvider) {
+    if (statsProvider.monthlyCompletionSpots.isEmpty) {
+      return _buildChartPlaceholder("Aylık tamamlama verisi yok.");
+    }
+
+    double minY = 0;
+    double maxY = statsProvider.maxMonthlyCompletedTasks > 0 ? (statsProvider.maxMonthlyCompletedTasks * 1.2).ceilToDouble() : 5;
+    if (maxY == 0 && statsProvider.monthlyCompletionSpots.any((spot) => spot.y > 0)) {
+      maxY = statsProvider.monthlyCompletionSpots.map((s) => s.y).reduce((a, b) => a > b ? a : b) * 1.2;
+      if(maxY < 5) maxY = 5;
+      maxY = maxY.ceilToDouble();
+    } else if (maxY == 0) {
+      maxY = 5;
+    }
+
+    double intervalY = (maxY / 5).ceilToDouble();
+    if (intervalY == 0) intervalY = 1;
+
+
+    return SizedBox(
+      height: 220,
+      child: LineChart(
+        LineChartData(
+          minX: 0,
+          maxX: 5,
+          minY: minY,
+          maxY: maxY,
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: true,
+            verticalInterval: 1,
+            horizontalInterval: intervalY,
+            getDrawingHorizontalLine: (value) {
+              return FlLine(color: AppColors.secondaryText.withOpacity(0.1), strokeWidth: 1);
+            },
+            getDrawingVerticalLine: (value) {
+              return FlLine(color: AppColors.secondaryText.withOpacity(0.1), strokeWidth: 1);
+            },
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 30,
+                interval: 1,
+                getTitlesWidget: (double value, TitleMeta meta) {
+                  final index = value.toInt();
+                  if (index >= 0 && index < statsProvider.last6MonthsLabels.length) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 6.0),
+                      child: Text(
+                          statsProvider.last6MonthsLabels[index],
+                          style: const TextStyle(color: AppColors.secondaryText, fontWeight: FontWeight.bold, fontSize: 10)
+                      ),
+                    );
+                  }
+                  return Container();
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 28,
+                interval: intervalY,
+                getTitlesWidget: (double value, TitleMeta meta) {
+                  if (value % intervalY == 0) {
+                    return Text(value.toInt().toString(), style: const TextStyle(color: AppColors.secondaryText, fontSize: 10));
+                  }
+                  return Container();
+                },
+              ),
+            ),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          borderData: FlBorderData(
+            show: true,
+            border: Border.all(color: AppColors.secondaryText.withOpacity(0.2), width: 1),
+          ),
+          lineBarsData: [
+            LineChartBarData(
+              spots: statsProvider.monthlyCompletionSpots,
+              isCurved: true,
+              color: AppColors.primary,
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: FlDotData(show: true, getDotPainter: (spot, percent, barData, index) {
+                return FlDotCirclePainter(radius: 4, color: AppColors.primaryDark, strokeWidth: 1, strokeColor: AppColors.whiteText);
+              }),
+              belowBarData: BarAreaData(
+                show: true,
+                color: AppColors.primary.withOpacity(0.1),
+              ),
+              preventCurveOverShooting: true,
+              preventCurveOvershootingThreshold: 1.0,
+            ),
+          ],
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipColor: (LineBarSpot touchedSpot) => Colors.blueGrey.withOpacity(0.8),
+              getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                return touchedSpots.map((LineBarSpot touchedSpot) {
+                  final monthIndex = touchedSpot.x.toInt();
+                  String monthName = "";
+                  if (monthIndex >= 0 && monthIndex < statsProvider.last6MonthsLabels.length) {
+                    monthName = statsProvider.last6MonthsLabels[monthIndex];
+                  }
+                  return LineTooltipItem(
+                    '$monthName\n',
+                    const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    children: [
+                      TextSpan(
+                        text: touchedSpot.y.toInt().toString(),
+                        style: TextStyle(
+                          color: touchedSpot.bar.gradient?.colors.first ?? touchedSpot.bar.color ?? Colors.blue,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const TextSpan(
+                        text: ' görev',
+                        style: TextStyle(fontWeight: FontWeight.normal),
+                      ),
+                    ],
+                  );
+                }).toList();
               },
             ),
           ),

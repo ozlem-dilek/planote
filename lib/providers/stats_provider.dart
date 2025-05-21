@@ -24,6 +24,10 @@ class StatsProvider extends ChangeNotifier {
   List<BarChartGroupData> _weeklyActivityGroups = [];
   final List<String> _last7DaysLabels = [];
 
+  List<FlSpot> _monthlyCompletionSpots = [];
+  final List<String> _last6MonthsLabels = [];
+  double _maxMonthlyCompletedTasks = 0;
+
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -34,6 +38,9 @@ class StatsProvider extends ChangeNotifier {
   List<CategoryModel> get allCategoriesForChartTitles => _allCategoriesForChartTitles;
   List<BarChartGroupData> get weeklyActivityGroups => _weeklyActivityGroups;
   List<String> get last7DaysLabels => _last7DaysLabels;
+  List<FlSpot> get monthlyCompletionSpots => _monthlyCompletionSpots;
+  List<String> get last6MonthsLabels => _last6MonthsLabels;
+  double get maxMonthlyCompletedTasks => _maxMonthlyCompletedTasks;
 
 
   StatsProvider(this._taskService, this._categoryService) {
@@ -52,6 +59,7 @@ class StatsProvider extends ChangeNotifier {
       _prepareCompletionRateStats(allTasks);
       _prepareTasksByCategoryStats(allTasks, _allCategoriesForChartTitles);
       _prepareWeeklyActivityStats(allTasks);
+      _prepareMonthlyCompletionStats(allTasks);
 
     } catch (e) {
       _error = "İstatistikler yüklenirken bir sorun oluştu: $e";
@@ -60,6 +68,9 @@ class StatsProvider extends ChangeNotifier {
       _allCategoriesForChartTitles = [];
       _weeklyActivityGroups = [];
       _last7DaysLabels.clear();
+      _monthlyCompletionSpots = [];
+      _last6MonthsLabels.clear();
+      _maxMonthlyCompletedTasks = 0;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -185,10 +196,10 @@ class StatsProvider extends ChangeNotifier {
     _last7DaysLabels.setAll(0, _last7DaysLabels.reversed);
 
     for (var task in allTasks) {
-      if (task.isCompleted && task.endDateTime != null) {
+      if (task.isCompleted && task.completedAt != null) {
         for (int i = 0; i < 7; i++) {
           final referenceDay = now.subtract(Duration(days: i));
-          if (DateUtils.isSameDay(task.endDateTime, referenceDay)) {
+          if (DateUtils.isSameDay(task.completedAt, referenceDay)) {
             dailyCompletedTasks[6-i] = (dailyCompletedTasks[6-i] ?? 0) + 1;
             break;
           }
@@ -211,6 +222,54 @@ class StatsProvider extends ChangeNotifier {
         ),
       );
     });
-    _weeklyActivityGroups.sort((a,b) => a.x.compareTo(b.x));
+    if (_weeklyActivityGroups.isNotEmpty) {
+      _weeklyActivityGroups.sort((a,b) => a.x.compareTo(b.x));
+    }
+  }
+
+  void _prepareMonthlyCompletionStats(List<TaskModel> allTasks) {
+    _monthlyCompletionSpots = [];
+    _last6MonthsLabels.clear();
+    _maxMonthlyCompletedTasks = 0;
+
+    final now = DateTime.now();
+    Map<int, double> monthlyCompletedCounts = {};
+
+    for (int i = 0; i < 6; i++) {
+      final targetMonth = DateTime(now.year, now.month - (5 - i), 1);
+      _last6MonthsLabels.add(DateFormat('MMM', 'tr_TR').format(targetMonth));
+      monthlyCompletedCounts[i] = 0;
+    }
+
+    for (var task in allTasks) {
+      if (task.isCompleted && task.completedAt != null) {
+        for (int i = 0; i < 6; i++) {
+          final referenceMonthStart = DateTime(now.year, now.month - (5 - i), 1);
+          final referenceMonthEnd = DateTime(now.year, now.month - (5 - i) + 1, 0, 23, 59, 59);
+
+          if (task.completedAt!.isAfter(referenceMonthStart.subtract(const Duration(microseconds: 1))) &&
+              task.completedAt!.isBefore(referenceMonthEnd.add(const Duration(microseconds: 1)))) {
+            monthlyCompletedCounts[i] = (monthlyCompletedCounts[i] ?? 0) + 1;
+            if (monthlyCompletedCounts[i]! > _maxMonthlyCompletedTasks) {
+              _maxMonthlyCompletedTasks = monthlyCompletedCounts[i]!;
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    monthlyCompletedCounts.forEach((monthIndex, count) {
+      _monthlyCompletionSpots.add(FlSpot(monthIndex.toDouble(), count));
+    });
+
+    if (_monthlyCompletionSpots.isEmpty && monthlyCompletedCounts.isNotEmpty) {
+      for(int i=0; i < 6; i++) {
+        _monthlyCompletionSpots.add(FlSpot(i.toDouble(),0));
+      }
+    }
+    if (_monthlyCompletionSpots.isNotEmpty) {
+      _monthlyCompletionSpots.sort((a,b) => a.x.compareTo(b.x));
+    }
   }
 }
