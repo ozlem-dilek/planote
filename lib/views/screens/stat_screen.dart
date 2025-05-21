@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 class IstatistiklerEkrani extends StatefulWidget {
   const IstatistiklerEkrani({super.key});
@@ -10,111 +9,122 @@ class IstatistiklerEkrani extends StatefulWidget {
 }
 
 class _IstatistiklerEkraniState extends State<IstatistiklerEkrani> {
-  // TODO: Provider ile istatistik verilerini ve filtre durumlarını yöneteceğiz
-  String _selectedDateRange = "Bu Hafta"; // Örnek filtre durumu
+  String _selectedDateRangeFilter = "Bu Ay";
 
   @override
   Widget build(BuildContext context) {
-    // Bu ekran AppShell içinde gösteriliyor.
-    // AppShell'in Scaffold'una erişmek için GlobalKey veya context üzerinden findAncestorStateOfType kullanılabilir.
-    // AppBar'daki leading IconButton için Builder kullanmak en temiz yollardan biridir.
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.screenBackground,
-        elevation: 0,
-        title: const Text(
-          'İstatistikler',
-          style: TextStyle(color: AppColors.primaryText, fontWeight: FontWeight.bold),
+    return Column(
+      children: [
+        Container(
+          color: AppColors.screenBackground,
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 4,
+            right: 16,
+            bottom: 10,
+          ),
+          child: Row(
+            children: [
+              Builder(
+                builder: (BuildContext buttonContext) {
+                  return IconButton(
+                    icon: const Icon(Icons.menu, color: AppColors.primaryText, size: 28),
+                    onPressed: () {
+                      Scaffold.of(buttonContext).openDrawer();
+                    },
+                    tooltip: 'Menüyü Aç',
+                  );
+                },
+              ),
+              const Text(
+                'İstatistikler',
+                style: TextStyle(
+                  color: AppColors.primaryText,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.filter_list_rounded, color: AppColors.primaryText),
+                onPressed: () {
+                  print("İstatistik Filtre tıklandı");
+                  // TODO: Filtreleme seçeneklerini göster
+                },
+                tooltip: "Filtrele",
+              ),
+            ],
+          ),
         ),
-        leading: Builder(
-          builder: (BuildContext context) {
-            return IconButton(
-              icon: const Icon(Icons.menu, color: AppColors.primaryText),
-              onPressed: () {
-                Scaffold.of(context).openDrawer(); // AppShell'in Drawer'ını açar
-              },
-              tooltip: 'Menüyü Aç',
-            );
-          },
-        ),
-        actions: [
-          // TODO: Tarih aralığı seçimi için bir ikon veya dropdown eklenebilir
-          IconButton(
-            icon: const Icon(Icons.filter_list, color: AppColors.primaryText),
-            onPressed: () {
-              print("Filtre tıklandı");
-            },
-          )
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Genel Bakış - $_selectedDateRange',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.primaryText),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                _buildStatCard(
+                  context: context,
+                  title: "Görev Tamamlama Oranı",
+                  chartPlaceholder: _buildChartPlaceholder("Pasta Grafik (Tamamlama Oranı)"),
+                  // TODO: statsProvider.completionRateData ile PieChart eklenecek
+                ),
+                const SizedBox(height: 16),
+                _buildStatCard(
+                  context: context,
+                  title: "Kategoriye Göre Görev Dağılımı",
+                  chartPlaceholder: _buildChartPlaceholder("Çubuk/Pasta Grafik (Kategoriler)"),
+                  // TODO: statsProvider.tasksByCategoryData ile BarChart/PieChart eklenecek
+                ),
+                const SizedBox(height: 16),
+                _buildStatCard(
+                  context: context,
+                  title: "Haftalık Aktivite",
+                  chartPlaceholder: _buildChartPlaceholder("Çubuk Grafik (Haftalık Aktivite)"),
+                  // TODO: statsProvider.weeklyActivityData ile BarChart eklenecek
+                ),
+                const SizedBox(height: 16),
+                _buildStatCard(
+                  context: context,
+                  title: "Aylık Tamamlanan Görev Sayısı",
+                  chartPlaceholder: _buildChartPlaceholder("Çizgi Grafik (Aylık Trend)"),
+                  // TODO: statsProvider.monthlyCompletionData ile LineChart eklenecek
+                ),
+                // TODO: Daha fazla istatistik kartı eklenebilir
+              ],
             ),
-            const SizedBox(height: 20),
+          ),
+        ),
+      ],
+    );
+  }
 
-            // TODO: Provider'dan gelen verilerle doldurulacak grafikler
-            _buildStatCard(
-              title: "Tamamlanan Görevler",
-              // child: Placeholder(fallbackHeight: 150, color: AppColors.primary.withOpacity(0.2)), // PieChart için
-              child: Container(
-                height: 150,
-                decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3))
-                ),
-                alignment: Alignment.center,
-                child: Text("Pasta Grafik (PieChart) Buraya Gelecek", style: TextStyle(color: AppColors.primary)),
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildStatCard(
-              title: "Günlük Aktivite",
-              // child: Placeholder(fallbackHeight: 200, color: AppColors.accent.withOpacity(0.3)), // BarChart için
-              child: Container(
-                height: 200,
-                decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.accent.withOpacity(0.4))
-                ),
-                alignment: Alignment.center,
-                child: Text("Çubuk Grafik (BarChart) Buraya Gelecek", style: TextStyle(color: AppColors.accent.withOpacity(0.9))),
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildStatCard(
-              title: "Kategori Dağılımı",
-              // child: Placeholder(fallbackHeight: 150, color: Colors.orange.withOpacity(0.2)), // Başka bir grafik
-              child: Container(
-                height: 150,
-                decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange.withOpacity(0.3))
-                ),
-                alignment: Alignment.center,
-                child: Text("Kategori Grafiği Buraya Gelecek", style: TextStyle(color: Colors.orange)),
-              ),
-            ),
-            // TODO: Daha fazla istatistik veya özet bilgi eklenebilir
-          ],
-        ),
+  Widget _buildChartPlaceholder(String text) {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(color: AppColors.primary.withOpacity(0.7), fontSize: 16),
       ),
     );
   }
 
-  Widget _buildStatCard({required String title, required Widget child}) {
+  Widget _buildStatCard({
+    required BuildContext context,
+    required String title,
+    required Widget chartPlaceholder,
+    Widget? additionalInfo,
+  }) {
     return Card(
       elevation: 2.0,
-      margin: const EdgeInsets.only(bottom: 16.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      color: AppColors.cardBackground,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -122,10 +132,17 @@ class _IstatistiklerEkraniState extends State<IstatistiklerEkrani> {
           children: [
             Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.primaryText),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppColors.primaryText,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            const SizedBox(height: 12.0),
-            child, // Grafik buraya gelecek
+            if (additionalInfo != null) ...[
+              const SizedBox(height: 8.0),
+              additionalInfo,
+            ],
+            const SizedBox(height: 16.0),
+            chartPlaceholder,
           ],
         ),
       ),

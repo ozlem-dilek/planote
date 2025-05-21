@@ -8,7 +8,9 @@ import '../../providers/task_provider.dart';
 import '../common_widgets/add_category_dialog.dart';
 
 class AddTaskScreen extends StatefulWidget {
-  const AddTaskScreen({super.key});
+  final DateTime? preSelectedDate;
+
+  const AddTaskScreen({super.key, this.preSelectedDate});
 
   @override
   State<AddTaskScreen> createState() => _AddTaskScreenState();
@@ -30,8 +32,18 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedEndDate = DateTime.now();
-    _selectedEndTime = null;
+    if (widget.preSelectedDate != null) {
+      // Eğer bir tarih önceden seçilmişse, hem başlangıç hem de bitiş için onu kullan
+      _selectedStartDate = widget.preSelectedDate;
+      _selectedEndDate = widget.preSelectedDate;
+      // Saatleri varsayılan olarak null bırakabiliriz veya o anki saati atayabiliriz
+      // _selectedStartTime = TimeOfDay.fromDateTime(DateTime.now());
+      // _selectedEndTime = TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1)));
+    } else {
+      // Varsayılan olarak bitiş bugünün tarihi, saat tanımsız
+      _selectedEndDate = DateTime.now();
+      _selectedEndTime = null;
+    }
   }
 
   @override
@@ -109,28 +121,33 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         },
       );
 
-      setState(() {
-        if (isStartDate) {
-          _selectedStartDate = pickedDate;
-          _selectedStartTime = pickedTime;
-          if (pickedTime != null) {
-            final combinedStart = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
-            if (_selectedEndDate != null && _selectedEndTime != null) {
-              final combinedEnd = DateTime(_selectedEndDate!.year, _selectedEndDate!.month, _selectedEndDate!.day, _selectedEndTime!.hour, _selectedEndTime!.minute);
-              if (combinedEnd.isBefore(combinedStart)) {
+      if (mounted) {
+        setState(() {
+          if (isStartDate) {
+            _selectedStartDate = pickedDate;
+            _selectedStartTime = pickedTime;
+            if (pickedTime != null) {
+              final combinedStart = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
+              if (_selectedEndDate != null && _selectedEndTime != null) {
+                final combinedEnd = DateTime(_selectedEndDate!.year, _selectedEndDate!.month, _selectedEndDate!.day, _selectedEndTime!.hour, _selectedEndTime!.minute);
+                if (combinedEnd.isBefore(combinedStart)) {
+                  _selectedEndDate = pickedDate;
+                  _selectedEndTime = TimeOfDay(hour: pickedTime.hour + 1, minute: pickedTime.minute);
+                }
+              } else if (_selectedEndDate != null && _selectedEndDate!.isBefore(pickedDate)){
+                _selectedEndDate = pickedDate;
+                _selectedEndTime = TimeOfDay(hour: pickedTime.hour + 1, minute: pickedTime.minute);
+              } else if (_selectedEndDate == null) {
                 _selectedEndDate = pickedDate;
                 _selectedEndTime = TimeOfDay(hour: pickedTime.hour + 1, minute: pickedTime.minute);
               }
-            } else if (_selectedEndDate != null && _selectedEndDate!.isBefore(pickedDate)) {
-              _selectedEndDate = pickedDate;
-              _selectedEndTime = TimeOfDay(hour: pickedTime.hour + 1, minute: pickedTime.minute);
             }
+          } else {
+            _selectedEndDate = pickedDate;
+            _selectedEndTime = pickedTime;
           }
-        } else {
-          _selectedEndDate = pickedDate;
-          _selectedEndTime = pickedTime;
-        }
-      });
+        });
+      }
     }
   }
 
@@ -162,49 +179,51 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       DateTime? finalStartDateTime;
       if (_selectedStartDate != null) {
         finalStartDateTime = DateTime(
-          _selectedStartDate!.year,
-          _selectedStartDate!.month,
-          _selectedStartDate!.day,
-          _selectedStartTime?.hour ?? 0,
-          _selectedStartTime?.minute ?? 0,
+            _selectedStartDate!.year, _selectedStartDate!.month, _selectedStartDate!.day,
+            _selectedStartTime?.hour ?? 0, _selectedStartTime?.minute ?? 0
         );
       }
 
       DateTime? finalEndDateTime;
       if (_selectedEndDate != null) {
         finalEndDateTime = DateTime(
-          _selectedEndDate!.year,
-          _selectedEndDate!.month,
-          _selectedEndDate!.day,
-          _selectedEndTime?.hour ?? 23,
-          _selectedEndTime?.minute ?? 59,
+            _selectedEndDate!.year, _selectedEndDate!.month, _selectedEndDate!.day,
+            _selectedEndTime?.hour ?? 23, _selectedEndTime?.minute ?? 59
         );
       }
 
       if (finalEndDateTime == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lütfen bir bitiş tarihi seçin!')),
-        );
+        if(mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Lütfen bir bitiş tarihi seçin!')),
+          );
+        }
         return;
       }
 
       if (finalStartDateTime != null && finalEndDateTime.isBefore(finalStartDateTime)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bitiş tarihi, başlangıç tarihinden önce olamaz!')),
-        );
+        if(mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Bitiş tarihi, başlangıç tarihinden önce olamaz!')),
+          );
+        }
         return;
       }
 
       if (_selectedCategory == null && categoryProvider.categories.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lütfen bir kategori seçin!')),
-        );
+        if(mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Lütfen bir kategori seçin!')),
+          );
+        }
         return;
       }
       if (_selectedCategory == null && categoryProvider.categories.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lütfen önce bir kategori ekleyin veya seçin!')),
-        );
+        if(mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Lütfen önce bir kategori ekleyin veya seçin!')),
+          );
+        }
         return;
       }
 
@@ -238,7 +257,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   String _formatDateTime(DateTime? date, TimeOfDay? time) {
-    if (date == null) return 'Tarih Seçilmedi';
+    if (date == null) return 'Seçilmedi';
     if (time == null) return DateFormat('dd MMMM yyyy, EEEE', 'tr_TR').format(date);
 
     final dateTime = DateTime(date.year, date.month, date.day, time.hour, time.minute);
@@ -305,23 +324,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 'Başlangıç: ${_formatDateTime(_selectedStartDate, _selectedStartTime)}',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primaryText),
               ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_selectedStartDate != null || _selectedStartTime != null)
-                    IconButton(
-                      icon: const Icon(Icons.clear_rounded, color: AppColors.secondaryText, size: 20),
-                      tooltip: 'Başlangıcı Temizle',
-                      onPressed: (){
-                        setState(() {
-                          _selectedStartDate = null;
-                          _selectedStartTime = null;
-                        });
-                      },
-                    ),
-                  const Icon(Icons.edit_calendar_outlined, color: AppColors.secondaryText),
-                ],
-              ),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (_selectedStartDate != null || _selectedStartTime != null) IconButton(icon: const Icon(Icons.clear_rounded, size: 20, color: AppColors.secondaryText), tooltip: 'Temizle', onPressed: (){ setState(() { _selectedStartDate = null; _selectedStartTime = null; }); }),
+                const Icon(Icons.edit_calendar_outlined, color: AppColors.secondaryText),
+              ]),
               onTap: () => _pickDateTime(
                   context: context,
                   isStartDate: true,
@@ -337,23 +343,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 'Bitiş: ${_formatDateTime(_selectedEndDate, _selectedEndTime)}',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primaryText),
               ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_selectedEndDate != null || _selectedEndTime != null)
-                    IconButton(
-                      icon: const Icon(Icons.clear_rounded, color: AppColors.secondaryText, size: 20),
-                      tooltip: 'Bitişi Temizle',
-                      onPressed: (){
-                        setState(() {
-                          _selectedEndDate = null;
-                          _selectedEndTime = null;
-                        });
-                      },
-                    ),
-                  const Icon(Icons.edit_calendar_outlined, color: AppColors.secondaryText),
-                ],
-              ),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (_selectedEndDate != null || _selectedEndTime != null) IconButton(icon: const Icon(Icons.clear_rounded, size: 20, color: AppColors.secondaryText), tooltip: 'Temizle', onPressed: (){ setState(() { _selectedEndDate = null; _selectedEndTime = null; }); }),
+                const Icon(Icons.edit_calendar_outlined, color: AppColors.secondaryText),
+              ]),
               onTap: () => _pickDateTime(
                   context: context,
                   isStartDate: false,
@@ -389,16 +382,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     items: categoryProvider.categories.map((CategoryModel category) {
                       return DropdownMenuItem<CategoryModel>(
                         value: category,
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 16, height: 16,
-                              decoration: BoxDecoration(color: Color(category.colorValue), shape: BoxShape.circle),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(category.name),
-                          ],
-                        ),
+                        child: Row(children: [
+                          Container(width: 16, height: 16, decoration: BoxDecoration(color: Color(category.colorValue), shape: BoxShape.circle)),
+                          const SizedBox(width: 10),
+                          Text(category.name),
+                        ]),
                       );
                     }).toList(),
                     onChanged: categoryProvider.categories.isEmpty ? null : (newValue) {

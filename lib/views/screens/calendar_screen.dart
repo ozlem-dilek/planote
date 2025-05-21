@@ -7,8 +7,8 @@ import '../../providers/calendar_provider.dart';
 import '../../models/task_model.dart';
 import '../../models/category_model.dart';
 import '../../providers/category_provider.dart';
-
-// import 'edit_task_screen.dart'; // TODO: task düzenleme için
+import 'edit_task_screen.dart';
+import 'add_task_screen.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -65,16 +65,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Widget _buildTopHeaderSection(BuildContext context, DateTime focusedDayForDisplay) {
     final calendarProvider = context.read<CalendarProvider>();
-    String currentMonthYear = "${_getMonthName(focusedDayForDisplay.month)} ${focusedDayForDisplay.year}";
+    String currentMonthYear = "${_getMonthName(focusedDayForDisplay.month, locale: 'tr')} ${focusedDayForDisplay.year}";
     String dayName = "";
     try {
-      dayName = DateFormat('EEEE', 'tr_TR').format(focusedDayForDisplay); // Dinamik gün adı Türkçe
-      dayName = dayName[0].toUpperCase() + dayName.substring(1); // İlk harfi büyük
+      dayName = DateFormat('EEEE', 'tr_TR').format(focusedDayForDisplay);
+      dayName = dayName[0].toUpperCase() + dayName.substring(1);
     } catch (e) {
-      dayName = "Calendar"; // Hata durumunda varsayılan
+      dayName = "Takvim";
     }
-    String title = "$dayName Calendar";
-
+    String title = dayName;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 12, 15),
@@ -104,11 +103,28 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
+                    icon: Icon(Icons.add_circle_outline_rounded, size: 28, color: AppColors.primary),
+                    tooltip: 'Yeni Görev Ekle',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AddTaskScreen(
+                            preSelectedDate: calendarProvider.selectedDay,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 0),
+                  IconButton(
                     icon: Icon(Icons.chevron_left_rounded, size: 34, color: AppColors.secondaryText.withOpacity(0.7)),
+                    tooltip: 'Önceki Ay',
                     onPressed: () => calendarProvider.changeFocusedDay(DateTime(focusedDayForDisplay.year, focusedDayForDisplay.month - 1, 1)),
                   ),
                   IconButton(
                     icon: Icon(Icons.chevron_right_rounded, size: 34, color: AppColors.secondaryText.withOpacity(0.7)),
+                    tooltip: 'Sonraki Ay',
                     onPressed: () => calendarProvider.changeFocusedDay(DateTime(focusedDayForDisplay.year, focusedDayForDisplay.month + 1, 1)),
                   ),
                 ],
@@ -129,6 +145,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       isSelected: _selectedChipIndex == index,
                       onTap: () {
                         setState(() { _selectedChipIndex = index; });
+                        // TODO: Bu chiplerin işlevselliğini Provider ile bağla
                       }),
                 );
               },
@@ -141,12 +158,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   Widget _buildCalendarGrid(BuildContext context, DateTime focusedDayForGrid, DateTime currentSelectedDay) {
     final calendarProvider = context.watch<CalendarProvider>();
-    final List<String> dayAbbreviations = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+    final List<String> dayAbbreviations = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
     final firstDayOfMonth = DateTime(focusedDayForGrid.year, focusedDayForGrid.month, 1);
     final daysInMonth = DateTime(focusedDayForGrid.year, focusedDayForGrid.month + 1, 0).day;
 
-    int startingDayOffset = firstDayOfMonth.weekday - 1; // Pazartesi = 0 ... Pazar = 6
+    int startingDayOffset = firstDayOfMonth.weekday - 1;
 
     List<DateTime?> monthDays = List.generate(startingDayOffset, (_) => null);
     for (int i = 0; i < daysInMonth; i++) {
@@ -228,7 +245,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           )).toList(),
                         ),
                       ] else ... [
-                        const SizedBox(height: 3 + 5), // Noktalar için ayrılan boşluğu koru
+                        const SizedBox(height: 3 + 5),
                       ]
                     ],
                   ),
@@ -276,7 +293,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
             }
             final Color categoryColor = category != null ? Color(category.colorValue) : Colors.grey;
 
-
             return Card(
               margin: const EdgeInsets.only(bottom: 8.0),
               elevation: 1.0,
@@ -293,7 +309,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
                 subtitle: task.startDateTime != null || task.endDateTime != null
                     ? Text(
-                  "${task.startDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.startDateTime!) : ''}${task.startDateTime != null && task.endDateTime != null ? ' - ' : ''}${task.endDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.endDateTime!) : ''}".trim(),
+                  "${task.startDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.startDateTime!) : ''}${task.startDateTime != null && task.endDateTime != null ? ' - ' : ''}${task.endDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.endDateTime!) : ''}".trim() == "-" ? DateFormat('dd MMM', 'tr_TR').format(task.endDateTime ?? task.startDateTime!) : "${task.startDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.startDateTime!) : ''}${task.startDateTime != null && task.endDateTime != null ? ' - ' : ''}${task.endDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.endDateTime!) : ''}",
                   style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
                 )
                     : null,
@@ -307,8 +323,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   },
                 ),
                 onTap: () {
-                  // TODO: edit task ekranını aç
-                  // Navigator.push(context, MaterialPageRoute(builder: (_) => EditTaskScreen(taskToEdit: task)));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditTaskScreen(taskToEdit: task),
+                    ),
+                  );
                 },
               ),
             );
