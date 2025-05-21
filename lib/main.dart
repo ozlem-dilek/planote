@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
-import 'views/screens/app_shell.dart';
+import 'view/screens/app_shell.dart';
 
 import 'models/category_model.dart';
 import 'models/task_model.dart';
@@ -15,6 +15,7 @@ import 'providers/category_provider.dart';
 import 'services/task_service.dart';
 import 'providers/task_provider.dart';
 import 'providers/calendar_provider.dart';
+import 'providers/stats_provider.dart';
 
 
 const String categoriesBoxName = 'categoriesBox';
@@ -63,6 +64,12 @@ class MyApp extends StatelessWidget {
             context.read<TaskService>(),
             context.read<CategoryService>(),
             context.read<TaskProvider>(),
+          ),
+        ),
+        ChangeNotifierProvider<StatsProvider>(
+          create: (context) => StatsProvider(
+            context.read<TaskService>(),
+            context.read<CategoryService>(),
           ),
         ),
       ],
