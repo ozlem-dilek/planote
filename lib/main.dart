@@ -3,13 +3,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
 import 'core/theme/app_theme.dart';
-import 'view/screens/app_shell.dart';
-
+import 'views/screens/app_shell.dart';
 import 'models/category_model.dart';
 import 'models/task_model.dart';
-
 import 'services/category_service.dart';
 import 'providers/category_provider.dart';
 import 'services/task_service.dart';

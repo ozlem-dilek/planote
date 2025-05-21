@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import '../models/task_model.dart';
 import '../models/category_model.dart';
 import '../services/task_service.dart';
@@ -20,6 +21,9 @@ class StatsProvider extends ChangeNotifier {
   List<BarChartGroupData> _tasksByCategoryGroups = [];
   List<CategoryModel> _allCategoriesForChartTitles = [];
 
+  List<BarChartGroupData> _weeklyActivityGroups = [];
+  final List<String> _last7DaysLabels = [];
+
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -28,6 +32,8 @@ class StatsProvider extends ChangeNotifier {
   int get completedTasks => _completedTasks;
   List<BarChartGroupData> get tasksByCategoryGroups => _tasksByCategoryGroups;
   List<CategoryModel> get allCategoriesForChartTitles => _allCategoriesForChartTitles;
+  List<BarChartGroupData> get weeklyActivityGroups => _weeklyActivityGroups;
+  List<String> get last7DaysLabels => _last7DaysLabels;
 
 
   StatsProvider(this._taskService, this._categoryService) {
@@ -45,13 +51,15 @@ class StatsProvider extends ChangeNotifier {
 
       _prepareCompletionRateStats(allTasks);
       _prepareTasksByCategoryStats(allTasks, _allCategoriesForChartTitles);
-
+      _prepareWeeklyActivityStats(allTasks);
 
     } catch (e) {
       _error = "İstatistikler yüklenirken bir sorun oluştu: $e";
       _completionRateSections = [];
       _tasksByCategoryGroups = [];
       _allCategoriesForChartTitles = [];
+      _weeklyActivityGroups = [];
+      _last7DaysLabels.clear();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -114,14 +122,13 @@ class StatsProvider extends ChangeNotifier {
       if(tasksCountMap.containsKey(task.categoryId)) {
         tasksCountMap[task.categoryId] = tasksCountMap[task.categoryId]! + 1;
       } else {
-        // Kategori ID'si bilinmeyen görevler için bir 'diğer' sayacı
         tasksCountMap['unknown'] = (tasksCountMap['unknown'] ?? 0) + 1;
       }
     }
 
     _tasksByCategoryGroups = [];
     int i = 0;
-    List<CategoryModel> categoriesWithTasks = [];
+    List<CategoryModel> categoriesWithData = [];
 
     categories.forEach((category) {
       final taskCount = tasksCountMap[category.id] ?? 0;
@@ -139,11 +146,10 @@ class StatsProvider extends ChangeNotifier {
             ],
           ),
         );
-        categoriesWithTasks.add(category);
+        categoriesWithData.add(category);
         i++;
       }
     });
-    _allCategoriesForChartTitles = categoriesWithTasks;
 
     if (tasksCountMap.containsKey('unknown') && (tasksCountMap['unknown'] ?? 0) > 0) {
       _tasksByCategoryGroups.add(
@@ -159,9 +165,52 @@ class StatsProvider extends ChangeNotifier {
           ],
         ),
       );
-      categoriesWithTasks.add(CategoryModel(id: 'unknown', name: 'Diğer', colorValue: AppColors.disabled.value));
-      _allCategoriesForChartTitles = categoriesWithTasks;
+      categoriesWithData.add(CategoryModel(id: 'unknown', name: 'Diğer', colorValue: AppColors.disabled.value));
       i++;
     }
+    _allCategoriesForChartTitles = categoriesWithData;
+  }
+
+  void _prepareWeeklyActivityStats(List<TaskModel> allTasks) {
+    _weeklyActivityGroups = [];
+    _last7DaysLabels.clear();
+    final now = DateTime.now();
+    Map<int, double> dailyCompletedTasks = {};
+
+    for (int i = 0; i < 7; i++) {
+      final day = now.subtract(Duration(days: i));
+      _last7DaysLabels.add(DateFormat('E', 'tr_TR').format(day));
+      dailyCompletedTasks[6 - i] = 0;
+    }
+    _last7DaysLabels.setAll(0, _last7DaysLabels.reversed);
+
+    for (var task in allTasks) {
+      if (task.isCompleted && task.endDateTime != null) {
+        for (int i = 0; i < 7; i++) {
+          final referenceDay = now.subtract(Duration(days: i));
+          if (DateUtils.isSameDay(task.endDateTime, referenceDay)) {
+            dailyCompletedTasks[6-i] = (dailyCompletedTasks[6-i] ?? 0) + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    dailyCompletedTasks.forEach((dayIndex, count) {
+      _weeklyActivityGroups.add(
+        BarChartGroupData(
+          x: dayIndex,
+          barRods: [
+            BarChartRodData(
+              toY: count,
+              color: AppColors.primary.withOpacity(0.7),
+              width: 14,
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4)),
+            ),
+          ],
+        ),
+      );
+    });
+    _weeklyActivityGroups.sort((a,b) => a.x.compareTo(b.x));
   }
 }
