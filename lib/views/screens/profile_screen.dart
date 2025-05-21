@@ -1,183 +1,176 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../providers/theme_provider.dart';
+// import '../../providers/auth_provider.dart'; // TODO: Gerçek kullanıcı bilgileri için
 
-class ProfilEkrani extends StatefulWidget {
+class ProfilEkrani extends StatelessWidget {
   const ProfilEkrani({super.key});
 
   @override
-  State<ProfilEkrani> createState() => _ProfilEkraniState();
-}
-
-class _ProfilEkraniState extends State<ProfilEkrani> {
-  // TODO: Bu değerler Provider ile yönetilecek
-  bool _isDarkTheme = false;
-  bool _notificationsEnabled = true;
-  String _userName = "Kullanıcı Adı"; // Placeholder
-  String _userEmail = "kullanici@email.com"; // Placeholder
-
-  @override
   Widget build(BuildContext context) {
-    // TODO: Kullanıcı bilgilerini ve ayarları Provider'dan al
-    // final authProvider = Provider.of<AuthProvider>(context);
-    // final settingsProvider = Provider.of<SettingsProvider>(context);
-    // _userName = authProvider.userName ?? "Kullanıcı Adı";
-    // _userEmail = authProvider.userEmail ?? "kullanici@email.com";
-    // _isDarkTheme = settingsProvider.isDarkMode;
-    // _notificationsEnabled = settingsProvider.notificationsEnabled;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+// TODO: Gerçek kullanıcı bilgilerini AuthProvider'dan al
+// final authProvider = Provider.of<AuthProvider>(context);
+// final userName = authProvider.userName ?? "Misafir Kullanıcı";
+// final userEmail = authProvider.userEmail ?? "email@example.com";
+    const userName = "Özlem Dilek Acar";
+    const userEmail = "ozlem.acar@example.com";
 
     return Scaffold(
-      backgroundColor: AppColors.screenBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.screenBackground,
-        elevation: 0,
-        title: const Text(
-          'Profilim',
-          style: TextStyle(color: AppColors.primaryText, fontWeight: FontWeight.bold),
+        elevation: 0.5,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? AppColors.screenBackground,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          'Profil ve Ayarlar',
+          style: Theme.of(context).appBarTheme.titleTextStyle,
         ),
         leading: Builder(
           builder: (BuildContext context) {
             return IconButton(
-              icon: const Icon(Icons.menu, color: AppColors.primaryText),
+              icon: Icon(Icons.menu, color: Theme.of(context).appBarTheme.iconTheme?.color),
               onPressed: () {
-                Scaffold.of(context).openDrawer(); // AppShell'in Drawer'ını açar
+                Scaffold.of(context).openDrawer();
               },
               tooltip: 'Menüyü Aç',
             );
           },
         ),
-        // actions: [
-        //   IconButton(
-        //     icon: Icon(Icons.edit_outlined, color: AppColors.primaryText),
-        //     onPressed: () {
-        //       // TODO: Profili düzenleme sayfasına git
-        //       print("Profili Düzenle tıklandı");
-        //     },
-        //   )
-        // ],
       ),
-      body: SingleChildScrollView(
+      body: ListView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _buildProfileHeader(context, _userName, _userEmail),
-            const SizedBox(height: 30),
-            _buildSectionTitle(context, "Hesap Ayarları"),
-            _buildProfileOptionTile(
-              context: context,
-              icon: Icons.edit_outlined,
-              title: "Profili Düzenle",
-              onTap: () {
-                // TODO: Profili düzenleme sayfasına git
-                print("Profili Düzenle tıklandı");
-                ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Profili düzenleme özelliği yakında!"))
-                );
-              },
-            ),
-            _buildProfileOptionTile(
-              context: context,
-              icon: Icons.lock_outline,
-              title: "Şifre Değiştir",
-              onTap: () {
-                // TODO: Şifre değiştirme sayfasına/dialoguna git
-                print("Şifre Değiştir tıklandı");
-                ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Şifre değiştirme özelliği yakında!"))
-                );
-              },
-            ),
-            const SizedBox(height: 30),
-            _buildSectionTitle(context, "Uygulama Ayarları"),
-            SwitchListTile(
-              title: Text("Koyu Tema", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primaryText)),
-              value: _isDarkTheme,
+        children: <Widget>[
+          _buildProfileHeader(context, userName, userEmail),
+          const SizedBox(height: 24),
+          _buildSectionTitle(context, "Genel Ayarlar"),
+          Card(
+            elevation: 1,
+            margin: const EdgeInsets.symmetric(vertical: 4.0),
+            child: SwitchListTile(
+              title: Text("Koyu Mod", style: Theme.of(context).textTheme.titleMedium),
+              value: themeProvider.isDarkMode,
               onChanged: (bool value) {
-                setState(() {
-                  _isDarkTheme = value;
-                });
-                // TODO: settingsProvider.toggleTheme(value);
-                print("Koyu Tema: $_isDarkTheme");
+                themeProvider.toggleTheme(value);
               },
-              secondary: Icon(Icons.dark_mode_outlined, color: AppColors.secondaryText),
-              activeColor: AppColors.primary,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            ),
-            SwitchListTile(
-              title: Text("Bildirimler", style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primaryText)),
-              value: _notificationsEnabled,
-              onChanged: (bool value) {
-                setState(() {
-                  _notificationsEnabled = value;
-                });
-                // TODO: settingsProvider.toggleNotifications(value);
-                print("Bildirimler: $_notificationsEnabled");
-              },
-              secondary: Icon(Icons.notifications_active_outlined, color: AppColors.secondaryText),
-              activeColor: AppColors.primary,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            ),
-            const SizedBox(height: 30),
-            Center(
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.logout),
-                label: const Text("Çıkış Yap"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error.withOpacity(0.8),
-                  foregroundColor: AppColors.whiteText,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                ),
-                onPressed: () {
-                  // TODO: Drawer'daki ile aynı logout fonksiyonunu çağır
-                  // context.read<AuthProvider>().logout();
-                  // Veya AppShell'e bir logout metodu ekleyip onu çağırabilirsiniz.
-                  print("Profil sayfasından Çıkış Yap tıklandı");
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Çıkış yapma özelliği Drawer'da mevcut."))
-                  );
-                },
+              secondary: Icon(
+                themeProvider.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                color: Theme.of(context).colorScheme.secondary,
               ),
+              activeColor: Theme.of(context).colorScheme.primary,
             ),
-          ],
-        ),
+          ),
+          _buildProfileOptionTile(
+            context: context,
+            icon: Icons.category_outlined,
+            title: "Kategorileri Yönet",
+            onTap: () {
+              // TODO: Kategorileri yönetme ekranına git
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Kategori yönetimi yakında!"))
+              );
+            },
+          ),
+          _buildProfileOptionTile(
+            context: context,
+            icon: Icons.notifications_none_outlined,
+            title: "Bildirim Ayarları",
+            onTap: () {
+              // TODO: Bildirim ayarları ekranına git
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Bildirim ayarları yakında!"))
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          _buildSectionTitle(context, "Hesap"),
+          _buildProfileOptionTile(
+            context: context,
+            icon: Icons.edit_outlined,
+            title: "Profili Düzenle",
+            onTap: () {
+              // TODO: Profili düzenleme ekranına git
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Profil düzenleme yakında!"))
+              );
+            },
+          ),
+          _buildProfileOptionTile(
+            context: context,
+            icon: Icons.logout,
+            title: "Çıkış Yap",
+            textColor: AppColors.error,
+            iconColor: AppColors.error,
+            onTap: () {
+              // TODO: Drawer'daki ile aynı logout fonksiyonunu çağır
+              // Provider.of<AuthProvider>(context, listen: false).logout().then((_){
+              //   Navigator.of(context).pushAndRemoveUntil(
+              //     MaterialPageRoute(builder: (context) => LoginScreen()), // LoginScreen'i import edin
+              //     (Route<dynamic> route) => false,
+              //   );
+              // });
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Çıkış yapma özelliği Drawer'da mevcut."))
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildProfileHeader(BuildContext context, String name, String email) {
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 40,
-          backgroundColor: AppColors.primary.withOpacity(0.2),
-          child: Icon(Icons.person_outline, size: 50, color: AppColors.primary),
-          // TODO: Gerçek profil resmi için backgroundImage: NetworkImage(...) veya AssetImage(...)
-        ),
-        const SizedBox(width: 20),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              name,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.primaryText, fontWeight: FontWeight.bold),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 45,
+            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            child: Icon(
+              Icons.person_rounded,
+              size: 50,
+              color: Theme.of(context).colorScheme.primary,
             ),
-            const SizedBox(height: 4),
-            Text(
-              email,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.secondaryText),
+// TODO: Gerçek profil resmi için backgroundImage
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  email,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-          ],
-        )
-      ],
+          )
+        ],
+      ),
     );
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4.0, bottom: 8.0), // ListTile'lar ile hizalamak için hafif sol padding
+      padding: const EdgeInsets.only(top:16.0, bottom: 8.0, left: 4.0),
       child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.secondaryText, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.secondary,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.8,
+        ),
       ),
     );
   }
@@ -188,17 +181,18 @@ class _ProfilEkraniState extends State<ProfilEkrani> {
     required String title,
     VoidCallback? onTap,
     Widget? trailing,
+    Color? textColor,
+    Color? iconColor,
   }) {
-    return Card( // Daha belirgin olması için Card içine alabiliriz
+    return Card(
+      elevation: 1,
       margin: const EdgeInsets.symmetric(vertical: 4.0),
-      elevation: 0.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: ListTile(
-        leading: Icon(icon, color: AppColors.secondaryText),
-        title: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primaryText)),
-        trailing: trailing ?? (onTap != null ? const Icon(Icons.chevron_right, color: AppColors.secondaryText) : null),
+        leading: Icon(icon, color: iconColor ?? Theme.of(context).iconTheme.color?.withOpacity(0.7)),
+        title: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: textColor)),
+        trailing: trailing ?? (onTap != null ? Icon(Icons.chevron_right, color: Theme.of(context).iconTheme.color?.withOpacity(0.5)) : null),
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       ),
     );
   }

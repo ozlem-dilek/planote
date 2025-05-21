@@ -3,16 +3,20 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+
 import 'core/theme/app_theme.dart';
 import 'views/screens/app_shell.dart';
+
 import 'models/category_model.dart';
 import 'models/task_model.dart';
+
 import 'services/category_service.dart';
 import 'providers/category_provider.dart';
 import 'services/task_service.dart';
 import 'providers/task_provider.dart';
 import 'providers/calendar_provider.dart';
 import 'providers/stats_provider.dart';
+import 'providers/theme_provider.dart';
 
 
 const String categoriesBoxName = 'categoriesBox';
@@ -44,6 +48,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider<ThemeProvider>(
+          create: (_) => ThemeProvider(),
+        ),
         Provider<CategoryService>(
           create: (_) => CategoryService(),
         ),
@@ -70,21 +77,27 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ],
-      child: MaterialApp(
-        title: 'Planote App',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [
-          Locale('tr', 'TR'),
-          Locale('en', ''),
-        ],
-        locale: const Locale('tr', 'TR'),
-        home: const AppShell(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Planote App',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('tr', 'TR'),
+              Locale('en', ''),
+            ],
+            locale: const Locale('tr', 'TR'),
+            home: const AppShell(),
+          );
+        },
       ),
     );
   }

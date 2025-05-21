@@ -1,102 +1,154 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart'; //kendim tanımladığım renkler
+import '../constants/app_colors.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
-      primaryColor: AppColors.primary, // Ana renk
-      primaryColorLight: AppColors.primaryLight, // Ana renk açık
-      primaryColorDark: AppColors.primaryDark, // Ana renk koyu
+        primaryColor: AppColors.primary,
+        primaryColorLight: AppColors.primaryLight,
+        primaryColorDark: AppColors.primaryDark,
+        colorScheme: ColorScheme.fromSwatch(
+          primarySwatch: MaterialColor(AppColors.primary.value, const <int, Color>{
+            50: AppColors.primaryLight, 100: AppColors.primaryLight,
+            200: AppColors.primaryLight, 300: AppColors.primary,
+            400: AppColors.primary,     500: AppColors.primary,
+            600: AppColors.primaryDark, 700: AppColors.primaryDark,
+            800: AppColors.primaryDark, 900: AppColors.primaryDark,
+          }),
+          accentColor: AppColors.accent, // accentColor artık colorScheme.secondary
+          backgroundColor: AppColors.screenBackground,
+          errorColor: AppColors.error,
+          brightness: Brightness.light, // Açık tema olduğunu belirt
+        ).copyWith(secondary: AppColors.accent),
+
+        scaffoldBackgroundColor: AppColors.screenBackground,
+        fontFamily: 'Poppins',
+
+        appBarTheme: const AppBarTheme(
+          elevation: 0,
+          backgroundColor: AppColors.screenBackground,
+          iconTheme: IconThemeData(color: AppColors.primaryText),
+          actionsIconTheme: IconThemeData(color: AppColors.primaryText),
+          titleTextStyle: TextStyle(
+            color: AppColors.primaryText,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Poppins',
+          ),
+        ),
+        textTheme: const TextTheme( /* ... mevcut light theme textTheme'iniz ... */ ),
+        iconTheme: const IconThemeData(color: AppColors.primaryText, size: 24.0),
+        buttonTheme: ButtonThemeData( /* ... */ ),
+        elevatedButtonTheme: ElevatedButtonThemeData( /* ... */ ),
+        inputDecorationTheme: InputDecorationTheme( /* ... */ ),
+        cardTheme: CardTheme( // Kartlar için varsayılan
+          elevation: 1.0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+          color: AppColors.cardBackground,
+          margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0),
+        )
+    );
+  }
+
+  // YENİ: Koyu Tema Tanımı
+  static ThemeData get darkTheme {
+    return ThemeData(
+      primaryColor: AppColors.primary, // Koyu temada da ana renk aynı kalabilir veya değişebilir
+      primaryColorLight: AppColors.primaryLight,
+      primaryColorDark: AppColors.primaryDark,
       colorScheme: ColorScheme.fromSwatch(
         primarySwatch: MaterialColor(AppColors.primary.value, const <int, Color>{
-          50: AppColors.primaryLight,
-          100: AppColors.primaryLight,
-          200: AppColors.primaryLight,
-          300: AppColors.primary,
-          400: AppColors.primary,
-          500: AppColors.primary,
-          600: AppColors.primaryDark,
-          700: AppColors.primaryDark,
-          800: AppColors.primaryDark,
-          900: AppColors.primaryDark,
+          50: AppColors.primaryLight, 100: AppColors.primaryLight,
+          200: AppColors.primaryLight, 300: AppColors.primary,
+          400: AppColors.primary,     500: AppColors.primary,
+          600: AppColors.primaryDark, 700: AppColors.primaryDark,
+          800: AppColors.primaryDark, 900: AppColors.primaryDark,
         }),
-        accentColor: AppColors.accent, // Vurgu için açık renk
-        backgroundColor: AppColors.screenBackground, // Genel ekran arka planı
-        errorColor: AppColors.error, // Hata rengi
-      ).copyWith(secondary: AppColors.accent), // accentColor yerine secondary
+        accentColor: AppColors.accent, // Koyu temada accent farklı olabilir
+        backgroundColor: const Color(0xFF121212), // Tipik koyu tema arkaplanı
+        errorColor: Colors.redAccent.shade100,
+        brightness: Brightness.dark, // Koyu tema olduğunu belirt
+      ).copyWith(secondary: AppColors.accent),
 
-      scaffoldBackgroundColor: AppColors.screenBackground,
-      fontFamily: 'Poppins', // todo: Bu fontu projeye ekle (assets) ve pubspec.yaml'da tanımla
+      scaffoldBackgroundColor: const Color(0xFF1E1E1E), // Koyu tema için scaffold arkaplanı
+      fontFamily: 'Poppins',
 
-      appBarTheme: const AppBarTheme(
-        elevation: 0, // gölge yok
-        backgroundColor: AppColors.screenBackground, // Veya sayfa bazlı AppColors.todoAppBarBackground vb.
-        iconTheme: IconThemeData(color: AppColors.primaryText),
-        actionsIconTheme: IconThemeData(color: AppColors.primaryText),
+      appBarTheme: AppBarTheme(
+        elevation: 0,
+        backgroundColor: const Color(0xFF1E1E1E), // Koyu tema AppBar arkaplanı
+        iconTheme: IconThemeData(color: AppColors.whiteText.withOpacity(0.87)),
+        actionsIconTheme: IconThemeData(color: AppColors.whiteText.withOpacity(0.87)),
         titleTextStyle: TextStyle(
-          color: AppColors.primaryText,
+          color: AppColors.whiteText.withOpacity(0.87),
           fontSize: 20,
           fontWeight: FontWeight.w600,
           fontFamily: 'Poppins',
         ),
       ),
 
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primaryText, fontFamily: 'Poppins'),
-        displayMedium: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.primaryText, fontFamily: 'Poppins'),
-        headlineMedium: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppColors.primaryText, fontFamily: 'Poppins'), // Önceki örneklerde kullanıldı
-        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppColors.primaryText, fontFamily: 'Poppins'),
-        bodyLarge: TextStyle(fontSize: 16, color: AppColors.primaryText, fontFamily: 'Poppins', height: 1.4),
-        bodyMedium: TextStyle(fontSize: 14, color: AppColors.secondaryText, fontFamily: 'Poppins', height: 1.4),
-        labelLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.whiteText, fontFamily: 'Poppins'), // Butonlar için
+      textTheme: TextTheme( // Koyu tema için metin stilleri
+        displayLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.whiteText.withOpacity(0.87), fontFamily: 'Poppins'),
+        displayMedium: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.whiteText.withOpacity(0.87), fontFamily: 'Poppins'),
+        headlineMedium: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppColors.whiteText.withOpacity(0.87), fontFamily: 'Poppins'),
+        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppColors.whiteText.withOpacity(0.87), fontFamily: 'Poppins'),
+        bodyLarge: TextStyle(fontSize: 16, color: AppColors.whiteText.withOpacity(0.87), fontFamily: 'Poppins', height: 1.4),
+        bodyMedium: TextStyle(fontSize: 14, color: AppColors.whiteText.withOpacity(0.60), fontFamily: 'Poppins', height: 1.4),
+        labelLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.primaryText, fontFamily: 'Poppins'), // Koyu tema buton metni için
       ),
 
-      iconTheme: const IconThemeData(
-        color: AppColors.primaryText,
+      iconTheme: IconThemeData(
+        color: AppColors.whiteText.withOpacity(0.87),
         size: 24.0,
       ),
 
       buttonTheme: ButtonThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-        buttonColor: AppColors.primary,
+        buttonColor: AppColors.primary, // Koyu temada buton rengi
         textTheme: ButtonTextTheme.primary,
       ),
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.whiteText,
+          foregroundColor: AppColors.primaryText, // Koyu tema için buton metin rengi
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Poppins'),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         ),
       ),
 
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: InputDecorationTheme( // Koyu tema için input stilleri
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
-          borderSide: const BorderSide(color: AppColors.secondaryText, width: 0.5),
+          borderSide: BorderSide(color: AppColors.whiteText.withOpacity(0.3), width: 0.5),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: AppColors.secondaryText.withOpacity(0.5), width: 1.0),
+          borderSide: BorderSide(color: AppColors.whiteText.withOpacity(0.5), width: 1.0),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: AppColors.accent, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.0),
+          borderSide: BorderSide(color: Colors.redAccent.shade100, width: 1.0),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          borderSide: BorderSide(color: Colors.redAccent.shade100, width: 1.5),
         ),
-        labelStyle: const TextStyle(color: AppColors.secondaryText, fontFamily: 'Poppins'),
-        hintStyle: TextStyle(color: AppColors.secondaryText.withOpacity(0.7), fontFamily: 'Poppins'),
+        labelStyle: TextStyle(color: AppColors.whiteText.withOpacity(0.60), fontFamily: 'Poppins'),
+        hintStyle: TextStyle(color: AppColors.whiteText.withOpacity(0.40), fontFamily: 'Poppins'),
+        prefixIconColor: AppColors.whiteText.withOpacity(0.60),
       ),
-      // TODO: Diğer widget temalarını buraya ekle: Chipbar, cardwidget vs.
+      cardTheme: CardTheme( // Koyu tema kartları için
+        elevation: 1.0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+        color: const Color(0xFF2A2A2A), // Koyu kart arka planı
+        margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0),
+      ),
+      dividerColor: AppColors.whiteText.withOpacity(0.12), // Koyu tema ayırıcı çizgileri
     );
   }
 }
