@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/theme_provider.dart';
-// import '../../providers/auth_provider.dart'; // TODO: Gerçek kullanıcı bilgileri için
+import 'manage_categories_screen.dart';
+
 
 class ProfilEkrani extends StatelessWidget {
   const ProfilEkrani({super.key});
@@ -10,10 +11,6 @@ class ProfilEkrani extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-// TODO: Gerçek kullanıcı bilgilerini AuthProvider'dan al
-// final authProvider = Provider.of<AuthProvider>(context);
-// final userName = authProvider.userName ?? "Misafir Kullanıcı";
-// final userEmail = authProvider.userEmail ?? "email@example.com";
     const userName = "Özlem Dilek Acar";
     const userEmail = "ozlem.acar@example.com";
 
@@ -59,6 +56,7 @@ class ProfilEkrani extends StatelessWidget {
                 color: Theme.of(context).colorScheme.secondary,
               ),
               activeColor: Theme.of(context).colorScheme.primary,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             ),
           ),
           _buildProfileOptionTile(
@@ -66,9 +64,9 @@ class ProfilEkrani extends StatelessWidget {
             icon: Icons.category_outlined,
             title: "Kategorileri Yönet",
             onTap: () {
-              // TODO: Kategorileri yönetme ekranına git
-              ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Kategori yönetimi yakında!"))
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ManageCategoriesScreen()),
               );
             },
           ),
@@ -77,7 +75,6 @@ class ProfilEkrani extends StatelessWidget {
             icon: Icons.notifications_none_outlined,
             title: "Bildirim Ayarları",
             onTap: () {
-              // TODO: Bildirim ayarları ekranına git
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Bildirim ayarları yakında!"))
               );
@@ -90,7 +87,6 @@ class ProfilEkrani extends StatelessWidget {
             icon: Icons.edit_outlined,
             title: "Profili Düzenle",
             onTap: () {
-              // TODO: Profili düzenleme ekranına git
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Profil düzenleme yakında!"))
               );
@@ -103,13 +99,6 @@ class ProfilEkrani extends StatelessWidget {
             textColor: AppColors.error,
             iconColor: AppColors.error,
             onTap: () {
-              // TODO: Drawer'daki ile aynı logout fonksiyonunu çağır
-              // Provider.of<AuthProvider>(context, listen: false).logout().then((_){
-              //   Navigator.of(context).pushAndRemoveUntil(
-              //     MaterialPageRoute(builder: (context) => LoginScreen()), // LoginScreen'i import edin
-              //     (Route<dynamic> route) => false,
-              //   );
-              // });
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Çıkış yapma özelliği Drawer'da mevcut."))
               );
@@ -133,7 +122,6 @@ class ProfilEkrani extends StatelessWidget {
               size: 50,
               color: Theme.of(context).colorScheme.primary,
             ),
-// TODO: Gerçek profil resmi için backgroundImage
           ),
           const SizedBox(width: 20),
           Expanded(

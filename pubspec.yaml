@@ -58,6 +58,7 @@ dev_dependencies:
   hive_generator:
   build_runner:
   shared_preferences:
+  crypto:
 
 
 # For information on the generic Dart part of this file, see the
