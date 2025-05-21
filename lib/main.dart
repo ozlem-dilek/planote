@@ -3,8 +3,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+
 import 'core/theme/app_theme.dart';
 import 'views/screens/app_shell.dart';
+import 'views/screens/login_screen.dart';
 
 import 'models/category_model.dart';
 import 'models/task_model.dart';
@@ -17,8 +19,8 @@ import 'providers/task_provider.dart';
 import 'providers/calendar_provider.dart';
 import 'providers/stats_provider.dart';
 import 'providers/theme_provider.dart';
-
-
+import 'services/auth_service.dart';
+import 'providers/auth_provider.dart';
 
 const String categoriesBoxName = 'categoriesBox';
 const String tasksBoxName = 'tasksBox';
@@ -69,6 +71,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<TaskProvider>(
           create: (context) => TaskProvider(context.read<TaskService>()),
         ),
+        Provider<AuthService>(
+          create: (_) => AuthService(),
+        ),
+        ChangeNotifierProvider<AuthProvider>(
+          create: (context) => AuthProvider(context.read<AuthService>()),
+        ),
         ChangeNotifierProvider<CalendarProvider>(
           create: (context) => CalendarProvider(
             context.read<TaskService>(),
@@ -83,8 +91,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
+      child: Consumer2<ThemeProvider, AuthProvider>(
+        builder: (context, themeProvider, authProvider, child) {
           return MaterialApp(
             title: 'Planote App',
             debugShowCheckedModeBanner: false,
@@ -101,7 +109,9 @@ class MyApp extends StatelessWidget {
               Locale('en', ''),
             ],
             locale: const Locale('tr', 'TR'),
-            home: const AppShell(),
+            home: authProvider.isLoggedIn
+                ? const AppShell()
+                : const LoginScreen(),
           );
         },
       ),

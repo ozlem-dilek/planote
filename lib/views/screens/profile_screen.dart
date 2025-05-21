@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../models/user_model.dart';
 import 'manage_categories_screen.dart';
-
+// import 'login_screen.dart'; // main.dart yönlendirme yapacak
 
 class ProfilEkrani extends StatelessWidget {
   const ProfilEkrani({super.key});
@@ -11,8 +13,11 @@ class ProfilEkrani extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    const userName = "Özlem Dilek Acar";
-    const userEmail = "ozlem.acar@example.com";
+    final authProvider = context.watch<AuthProvider>();
+    final UserModel? currentUser = authProvider.currentUser;
+
+    final String userName = currentUser?.username ?? "Kullanıcı";
+    final String userEmail = currentUser?.email ?? "Email bilgisi yok";
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -98,10 +103,8 @@ class ProfilEkrani extends StatelessWidget {
             title: "Çıkış Yap",
             textColor: AppColors.error,
             iconColor: AppColors.error,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Çıkış yapma özelliği Drawer'da mevcut."))
-              );
+            onTap: () async {
+              await context.read<AuthProvider>().logout();
             },
           ),
         ],

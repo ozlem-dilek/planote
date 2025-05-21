@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../providers/auth_provider.dart';
+import 'package:planote/models/user_model.dart';
 
 class MyCommonDrawer extends StatelessWidget {
   final Function(int) onPageSelected;
@@ -8,6 +11,13 @@ class MyCommonDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final UserModel? currentUser = authProvider.currentUser;
+
+    final String userName = currentUser?.username ?? "Kullanıcı";
+    final String userEmail = currentUser?.email ?? "";
+
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -27,9 +37,14 @@ class MyCommonDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Kullanıcı Adı', // TODO: Dinamik kullanıcı adı
+                  userName,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.whiteText),
                 ),
+                if (userEmail.isNotEmpty)
+                  Text(
+                    userEmail,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.whiteText.withOpacity(0.8)),
+                  ),
               ],
             ),
           ),
@@ -71,16 +86,21 @@ class MyCommonDrawer extends StatelessWidget {
             title: Text('Hakkında', style: Theme.of(context).textTheme.bodyLarge),
             onTap: () {
               Navigator.pop(context);
-              showAboutDialog(context: context);
+              showAboutDialog(
+                context: context,
+                applicationName: 'PlaNote',
+                applicationVersion: 'v1.0',
+                applicationIcon: const Icon(Icons.flutter_dash, size: 48, color: AppColors.primary),
+                applicationLegalese: '© 2025, created by Özlem Dilek Acar',
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.logout, color: AppColors.error),
             title: Text('Çıkış Yap', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.error)),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              // TODO: Çıkış yapma Provider/Servis çağrısı
-              print('Çıkış yap tıklandı.');
+              await context.read<AuthProvider>().logout();
             },
           ),
         ],
