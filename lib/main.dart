@@ -3,12 +3,12 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
 import 'core/theme/app_theme.dart';
 import 'views/screens/app_shell.dart';
 
 import 'models/category_model.dart';
 import 'models/task_model.dart';
+import 'models/user_model.dart';
 
 import 'services/category_service.dart';
 import 'providers/category_provider.dart';
@@ -19,8 +19,10 @@ import 'providers/stats_provider.dart';
 import 'providers/theme_provider.dart';
 
 
+
 const String categoriesBoxName = 'categoriesBox';
 const String tasksBoxName = 'tasksBox';
+const String usersBoxName = 'usersBox';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,9 +36,13 @@ void main() async {
   if (!Hive.isAdapterRegistered(TaskModelAdapter().typeId)) {
     Hive.registerAdapter(TaskModelAdapter());
   }
+  if (!Hive.isAdapterRegistered(UserModelAdapter().typeId)) {
+    Hive.registerAdapter(UserModelAdapter());
+  }
 
   await Hive.openBox<CategoryModel>(categoriesBoxName);
   await Hive.openBox<TaskModel>(tasksBoxName);
+  await Hive.openBox<UserModel>(usersBoxName);
 
   runApp(const MyApp());
 }
