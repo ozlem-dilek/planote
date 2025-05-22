@@ -19,7 +19,7 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   int _selectedChipIndex = 1;
-  final List<String> _chipLabels = ["Planning", "Calendar"];
+  final List<String> _chipLabels = ["Planning"];
 
   String _getDayName(int weekday, {String locale = 'en'}) {
     if (locale == 'tr') {
@@ -52,13 +52,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     return Container(
       color: AppColors.screenBackground,
-      child: Column(
-        children: [
-          _buildTopHeaderSection(context, focusedDay),
-          _buildCalendarGrid(context, focusedDay, selectedDay),
-          const _WavyDecorationSection(),
-          _buildEventsListSection(context, calendarProvider.tasksForSelectedDay, calendarProvider.isLoadingTasks, calendarProvider.errorLoadingTasks),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildTopHeaderSection(context, focusedDay),
+            _buildCalendarGrid(context, focusedDay, selectedDay),
+            const _WavyDecorationSection(),
+            _buildEventsListSection(context, calendarProvider.tasksForSelectedDay, calendarProvider.isLoadingTasks, calendarProvider.errorLoadingTasks),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -262,78 +265,77 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final calendarProvider = context.read<CalendarProvider>();
 
     if (isLoading) {
-      return const Expanded(child: Center(child: CircularProgressIndicator()));
+      return const Center(child: CircularProgressIndicator());
     }
     if (error != null) {
-      return Expanded(child: Center(child: Text(error, style: const TextStyle(color: AppColors.error))));
+      return Center(child: Text(error, style: const TextStyle(color: AppColors.error)));
     }
     if (tasks.isEmpty) {
-      return Expanded(
-        child: Container(
-          width: double.infinity,
-          color: AppColors.wavyGreenish.withOpacity(0.7),
-          alignment: Alignment.center,
-          child: Text("Bu gün için planlanmış görev yok.", style: TextStyle(color: AppColors.primaryText.withOpacity(0.7))),
-        ),
+      return Container(
+        width: double.infinity,
+        color: AppColors.wavyGreenish.withOpacity(0.7),
+        padding: const EdgeInsets.symmetric(vertical: 30),
+        alignment: Alignment.center,
+        child: Text("Bu gün için planlanmış görev yok.", style: TextStyle(color: AppColors.primaryText.withOpacity(0.7))),
       );
     }
 
-    return Expanded(
-      child: Container(
-        color: AppColors.wavyGreenish.withOpacity(0.7),
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-          itemCount: tasks.length,
-          itemBuilder: (context, index) {
-            final task = tasks[index];
+    return Container(
+      color: AppColors.wavyGreenish.withOpacity(0.7),
+      child: ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+        itemCount: tasks.length,
+        itemBuilder: (context, index) {
+          final task = tasks[index];
 
-            CategoryModel? category;
-            if(task.categoryId.isNotEmpty) {
-              category = context.read<CategoryProvider>().getCategoryById(task.categoryId);
-            }
-            final Color categoryColor = category != null ? Color(category.colorValue) : Colors.grey;
+          CategoryModel? category;
+          if(task.categoryId.isNotEmpty) {
+            category = context.read<CategoryProvider>().getCategoryById(task.categoryId);
+          }
+          final Color categoryColor = category != null ? Color(category.colorValue) : Colors.grey;
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8.0),
-              elevation: 1.0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              child: ListTile(
-                leading: Container(width: 5, height: 40, color: categoryColor),
-                title: Text(
-                  task.title,
-                  style: TextStyle(
-                    decoration: task.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                    color: task.isCompleted ? AppColors.secondaryText : AppColors.primaryText,
-                    fontWeight: task.isCompleted ? FontWeight.normal : FontWeight.w500,
-                  ),
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8.0),
+            elevation: 1.0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            child: ListTile(
+              leading: Container(width: 5, height: 40, color: categoryColor),
+              title: Text(
+                task.title,
+                style: TextStyle(
+                  decoration: task.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                  color: task.isCompleted ? AppColors.secondaryText : AppColors.primaryText,
+                  fontWeight: task.isCompleted ? FontWeight.normal : FontWeight.w500,
                 ),
-                subtitle: task.startDateTime != null || task.endDateTime != null
-                    ? Text(
-                  "${task.startDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.startDateTime!) : ''}${task.startDateTime != null && task.endDateTime != null ? ' - ' : ''}${task.endDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.endDateTime!) : ''}".trim() == "-" ? DateFormat('dd MMM', 'tr_TR').format(task.endDateTime ?? task.startDateTime!) : "${task.startDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.startDateTime!) : ''}${task.startDateTime != null && task.endDateTime != null ? ' - ' : ''}${task.endDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.endDateTime!) : ''}",
-                  style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
-                )
-                    : null,
-                trailing: IconButton(
-                  icon: Icon(
-                    task.isCompleted ? Icons.check_box_outlined : Icons.check_box_outline_blank_rounded,
-                    color: task.isCompleted ? AppColors.primary : AppColors.secondaryText,
-                  ),
-                  onPressed: () {
-                    calendarProvider.toggleTaskCompletionOnCalendar(task.id);
-                  },
+              ),
+              subtitle: task.startDateTime != null || task.endDateTime != null
+                  ? Text(
+                "${task.startDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.startDateTime!) : ''}${task.startDateTime != null && task.endDateTime != null ? ' - ' : ''}${task.endDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.endDateTime!) : ''}".trim() == "-" ? DateFormat('dd MMM', 'tr_TR').format(task.endDateTime ?? task.startDateTime!) : "${task.startDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.startDateTime!) : ''}${task.startDateTime != null && task.endDateTime != null ? ' - ' : ''}${task.endDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.endDateTime!) : ''}",
+                style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
+              )
+                  : null,
+              trailing: IconButton(
+                icon: Icon(
+                  task.isCompleted ? Icons.check_box_outlined : Icons.check_box_outline_blank_rounded,
+                  color: task.isCompleted ? AppColors.primary : AppColors.secondaryText,
                 ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditTaskScreen(taskToEdit: task),
-                    ),
-                  );
+                onPressed: () {
+                  calendarProvider.toggleTaskCompletionOnCalendar(task.id);
                 },
               ),
-            );
-          },
-        ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditTaskScreen(taskToEdit: task),
+                  ),
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }
