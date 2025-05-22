@@ -21,6 +21,9 @@ class UserModel extends HiveObject {
   @HiveField(5)
   DateTime? createdAt;
 
+  @HiveField(6)
+  String? profileImagePath;
+
   UserModel({
     required this.userId,
     required this.username,
@@ -28,5 +31,6 @@ class UserModel extends HiveObject {
     required this.salt,
     this.email,
     this.createdAt,
+    this.profileImagePath,
   });
 }

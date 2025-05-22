@@ -19,7 +19,7 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   int _selectedChipIndex = 1;
-  final List<String> _chipLabels = ["Planning", "Calendar", "Snow/Gorev"];
+  final List<String> _chipLabels = ["Planning", "Calendar"];
 
   String _getDayName(int weekday, {String locale = 'en'}) {
     if (locale == 'tr') {

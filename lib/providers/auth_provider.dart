@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive/hive.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
-import 'package:hive/hive.dart';
+import '../../main.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
@@ -27,8 +28,7 @@ class AuthProvider extends ChangeNotifier {
     if (userId == null) {
       return;
     }
-
-    final userBox = Hive.box<UserModel>('usersBox');
+    final userBox = Hive.box<UserModel>(usersBoxName);
     _currentUser = userBox.get(userId);
     if (_currentUser != null) {
       notifyListeners();
@@ -92,5 +92,45 @@ class AuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_loggedInUserIdKey);
     notifyListeners();
+  }
+
+  Future<bool> updateUserProfile({
+    String? newUsername,
+    String? newEmail,
+    String? currentPassword,
+    String? newPassword,
+    String? newProfileImagePath,
+  }) async {
+    if (_currentUser == null) {
+      _error = "Profil güncellemek için önce giriş yapmalısınız.";
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      UserModel? updatedUser = await _authService.updateUserProfile(
+        userId: _currentUser!.userId,
+        newUsername: newUsername,
+        newEmail: newEmail,
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        newProfileImagePath: newProfileImagePath,
+      );
+      if (updatedUser != null) {
+        _currentUser = updatedUser;
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 }

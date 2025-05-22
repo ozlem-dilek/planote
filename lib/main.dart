@@ -26,6 +26,31 @@ const String categoriesBoxName = 'categoriesBox';
 const String tasksBoxName = 'tasksBox';
 const String usersBoxName = 'usersBox';
 
+void printAllTasks() async {
+  final tasksBox = Hive.box<TaskModel>(tasksBoxName);
+  print("--- Tüm Görevler (${tasksBox.length} adet) ---");
+  for (var task in tasksBox.values) {
+    print("ID: ${task.id}, Başlık: ${task.title}, Bitiş: ${task.endDateTime}, Tamamlandı: ${task.isCompleted}, KategoriID: ${task.categoryId}");
+  }
+}
+
+void printAllCategories() async {
+  final categoriesBox = Hive.box<CategoryModel>(categoriesBoxName);
+  print("--- Tüm Kategoriler (${categoriesBox.length} adet) ---");
+  for (var category in categoriesBox.values) {
+    print("ID: ${category.id}, Ad: ${category.name}, Renk: ${Color(category.colorValue)}");
+  }
+}
+
+void printAllUsers() async {
+  final usersBox = Hive.box<UserModel>(usersBoxName);
+  print("--- Tüm Kullanıcılar (${usersBox.length} adet) ---");
+  for (var user in usersBox.values) {
+    print("ID: ${user.userId}, Kullanıcı Adı: ${user.username}, Email: ${user.email}");
+  }
+}
+
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('tr_TR', null);
@@ -45,6 +70,10 @@ void main() async {
   await Hive.openBox<CategoryModel>(categoriesBoxName);
   await Hive.openBox<TaskModel>(tasksBoxName);
   await Hive.openBox<UserModel>(usersBoxName);
+
+  printAllTasks();
+  printAllCategories();
+  printAllUsers();
 
   runApp(const MyApp());
 }
@@ -118,3 +147,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+

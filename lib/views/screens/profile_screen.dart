@@ -1,3 +1,4 @@
+import 'dart:io'; // File için
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -5,7 +6,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user_model.dart';
 import 'manage_categories_screen.dart';
-// import 'login_screen.dart'; // main.dart yönlendirme yapacak
+import 'edit_profile_screen.dart';
 
 class ProfilEkrani extends StatelessWidget {
   const ProfilEkrani({super.key});
@@ -18,6 +19,7 @@ class ProfilEkrani extends StatelessWidget {
 
     final String userName = currentUser?.username ?? "Kullanıcı";
     final String userEmail = currentUser?.email ?? "Email bilgisi yok";
+    final String? profileImagePath = currentUser?.profileImagePath;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -44,7 +46,7 @@ class ProfilEkrani extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: <Widget>[
-          _buildProfileHeader(context, userName, userEmail),
+          _buildProfileHeader(context, userName, userEmail, profileImagePath),
           const SizedBox(height: 24),
           _buildSectionTitle(context, "Genel Ayarlar"),
           Card(
@@ -92,9 +94,16 @@ class ProfilEkrani extends StatelessWidget {
             icon: Icons.edit_outlined,
             title: "Profili Düzenle",
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Profil düzenleme yakında!"))
-              );
+              if (currentUser != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => EditProfileScreen(currentUser: currentUser)),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Önce giriş yapmalısınız!"))
+                );
+              }
             },
           ),
           _buildProfileOptionTile(
@@ -112,7 +121,18 @@ class ProfilEkrani extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, String name, String email) {
+  Widget _buildProfileHeader(BuildContext context, String name, String email, String? imagePath) {
+    Widget imageWidget;
+    if (imagePath != null && imagePath.isNotEmpty) {
+      imageWidget = Image.file(File(imagePath), fit: BoxFit.cover, width: 90, height: 90);
+    } else {
+      imageWidget = Icon(
+        Icons.person_rounded,
+        size: 50,
+        color: Theme.of(context).colorScheme.primary,
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Row(
@@ -120,11 +140,7 @@ class ProfilEkrani extends StatelessWidget {
           CircleAvatar(
             radius: 45,
             backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            child: Icon(
-              Icons.person_rounded,
-              size: 50,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            child: ClipOval(child: imageWidget),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -153,20 +169,13 @@ class ProfilEkrani extends StatelessWidget {
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
-    return Padding(
+    return Padding( /* ... aynı ... */
       padding: const EdgeInsets.only(top:16.0, bottom: 8.0, left: 4.0),
-      child: Text(
-        title.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.secondary,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.8,
-        ),
-      ),
+      child: Text(title.toUpperCase(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.secondary, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
     );
   }
 
-  Widget _buildProfileOptionTile({
+  Widget _buildProfileOptionTile({ /* ... aynı ... */
     required BuildContext context,
     required IconData icon,
     required String title,
