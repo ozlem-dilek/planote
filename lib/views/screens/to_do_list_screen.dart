@@ -122,7 +122,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
                 );
               }),
               const Text(
-                'To-Do List',
+                'Görevler',
                 style: TextStyle(
                   color: AppColors.primaryText,
                   fontWeight: FontWeight.bold,

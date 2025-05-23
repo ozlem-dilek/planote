@@ -3,8 +3,9 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends StatefulWidget ,2,
   const LoginScreen({super.key});
 
   @override
@@ -60,16 +61,17 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Icon(
-                  Icons.lock_person_outlined,
-                  size: 80,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(height: 24.0),
-                Text(
-                  'Giriş Yap',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: AppColors.primaryText),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('PLANOTE',
+                        style: GoogleFonts.lacquer(
+                          color: AppColors.primary,
+                          fontSize:50,
+
+                        )
+
+                    )],
                 ),
                 const SizedBox(height: 32.0),
                 TextFormField(
@@ -96,7 +98,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _isPasswordVisible
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                       ),
                       onPressed: () {
                         setState(() {
@@ -116,23 +120,31 @@ class _LoginScreenState extends State<LoginScreen> {
                 authProvider.isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
-                  onPressed: _loginUser,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  ),
-                  child: const Text('GİRİŞ YAP'),
-                ),
+                      onPressed: _loginUser,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      ),
+                      child: const Text('GİRİŞ YAP'),
+                    ),
                 const SizedBox(height: 16.0),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Text("Hesabınız yok mu?", style: TextStyle(color: AppColors.secondaryText)),
+                    Text(
+                      "Hesabınız yok mu?",
+                      style: TextStyle(color: AppColors.secondaryText),
+                    ),
                     TextButton(
-                      child: const Text('Kayıt Ol', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Kayıt Ol',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const RegisterScreen(),
+                          ),
                         );
                       },
                     ),

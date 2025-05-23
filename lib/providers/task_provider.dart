@@ -28,7 +28,8 @@ class TaskProvider extends ChangeNotifier {
   List<TaskModel> get todaysTasks {
     final now = DateTime.now();
     return _filteredAndSortedTasks.where((task) =>
-    task.endDateTime != null &&
+    !task.isCompleted && // <-- YENİ FİLTRE EKLENDİ
+        task.endDateTime != null &&
         DateUtils.isSameDay(task.endDateTime, now)
     ).toList();
   }
@@ -38,7 +39,9 @@ class TaskProvider extends ChangeNotifier {
     final today = DateUtils.dateOnly(now);
     final oneWeekFromNow = today.add(const Duration(days: 7));
     return _filteredAndSortedTasks.where((task) {
+      if (task.isCompleted) return false; // <-- YENİ FİLTRE EKLENDİ
       if (task.endDateTime == null) return false;
+
       final taskEndDateOnly = DateUtils.dateOnly(task.endDateTime!);
       return !DateUtils.isSameDay(task.endDateTime, now) &&
           taskEndDateOnly.isAfter(today) &&
@@ -60,7 +63,8 @@ class TaskProvider extends ChangeNotifier {
 
       if (taskEndDateOnly.isBefore(today)) return false;
       if (DateUtils.isSameDay(task.endDateTime, now)) return false;
-      if (!taskEndDateOnly.isAfter(endOfUpcomingWindow)) return false;
+      // Aşağıdaki satır, endOfUpcomingWindow'u da dahil edecek şekilde düzeltildi:
+      if (!taskEndDateOnly.isAfter(endOfUpcomingWindow) && (taskEndDateOnly.isBefore(endOfUpcomingWindow) || DateUtils.isSameDay(taskEndDateOnly, endOfUpcomingWindow))) return false;
 
       return true;
     }).toList();
