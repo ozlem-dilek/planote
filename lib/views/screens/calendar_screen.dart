@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../common_widgets/custom_tab_chip_bar.dart';
 import '../../providers/calendar_provider.dart';
+import '../../providers/category_provider.dart';
 import '../../models/task_model.dart';
 import '../../models/category_model.dart';
-import '../../providers/category_provider.dart';
 import 'edit_task_screen.dart';
 import 'add_task_screen.dart';
 
@@ -19,28 +19,28 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   int _selectedChipIndex = 1;
-  final List<String> _chipLabels = ["Planlarım"];
+  final List<String> _chipLabels = ["Planning", "Calendar"];
 
-  String _getDayName(int weekday, {String locale = 'en'}) {
+  String _getDayName(int weekday, {String locale = 'tr'}) {
     if (locale == 'tr') {
       const days = ["", "PZT", "SAL", "ÇAR", "PER", "CUM", "CMT", "PAZ"];
-      if (weekday >=1 && weekday <=7) return days[weekday];
+      if (weekday >= 1 && weekday <= 7) return days[weekday];
       return "";
     }
     const days = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     if (weekday == 7) return "Sun";
-    if (weekday >=1 && weekday <=6) return days[weekday];
+    if (weekday >= 1 && weekday <= 6) return days[weekday];
     return "";
   }
 
   String _getMonthName(int month, {String locale = 'tr'}) {
     if (locale == 'tr') {
       const monthNames = ["", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-      if (month >=1 && month <=12) return monthNames[month];
+      if (month >= 1 && month <= 12) return monthNames[month];
       return "";
     }
     const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    if (month >=1 && month <=12) return monthNames[month];
+    if (month >= 1 && month <= 12) return monthNames[month];
     return "";
   }
 
@@ -49,16 +49,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final calendarProvider = context.watch<CalendarProvider>();
     final DateTime focusedDay = calendarProvider.focusedDay;
     final DateTime selectedDay = calendarProvider.selectedDay;
+    final ThemeData theme = Theme.of(context);
 
     return Container(
-      color: AppColors.screenBackground,
+      color: theme.scaffoldBackgroundColor,
       child: SingleChildScrollView(
         child: Column(
           children: [
-            _buildTopHeaderSection(context, focusedDay),
-            _buildCalendarGrid(context, focusedDay, selectedDay),
-            const _WavyDecorationSection(),
-            _buildEventsListSection(context, calendarProvider.tasksForSelectedDay, calendarProvider.isLoadingTasks, calendarProvider.errorLoadingTasks),
+            _buildTopHeaderSection(context, focusedDay, theme),
+            _buildCalendarGrid(context, focusedDay, selectedDay, theme),
+            _WavyDecorationSection(theme: theme),
+            _buildEventsListSection(context, calendarProvider.tasksForSelectedDay, calendarProvider.isLoadingTasks, calendarProvider.errorLoadingTasks, theme),
             const SizedBox(height: 16),
           ],
         ),
@@ -66,7 +67,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildTopHeaderSection(BuildContext context, DateTime focusedDayForDisplay) {
+  Widget _buildTopHeaderSection(BuildContext context, DateTime focusedDayForDisplay, ThemeData theme) {
     final calendarProvider = context.read<CalendarProvider>();
     String currentMonthYear = "${_getMonthName(focusedDayForDisplay.month, locale: 'tr')} ${focusedDayForDisplay.year}";
     String dayName = "";
@@ -90,14 +91,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
               Flexible(
                 child: RichText(
                   text: TextSpan(
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        color: AppColors.calendarTitle,
+                    style: theme.textTheme.displaySmall?.copyWith(
+                        color: theme.colorScheme.onBackground,
                         height: 1.1,
                         fontSize: 26
                     ),
                     children: <TextSpan>[
                       TextSpan(text: '$title\n', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      TextSpan(text: currentMonthYear, style: TextStyle(fontWeight: FontWeight.w300, fontSize: 20, color: AppColors.secondaryText.withOpacity(0.8))),
+                      TextSpan(text: currentMonthYear, style: TextStyle(fontWeight: FontWeight.w300, fontSize: 20, color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8))),
                     ],
                   ),
                 ),
@@ -106,7 +107,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: Icon(Icons.add_circle_outline_rounded, size: 28, color: AppColors.primary),
+                    icon: Icon(Icons.add_circle_outline_rounded, size: 28, color: theme.colorScheme.primary),
                     tooltip: 'Yeni Görev Ekle',
                     onPressed: () {
                       Navigator.push(
@@ -121,12 +122,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
                   const SizedBox(width: 0),
                   IconButton(
-                    icon: Icon(Icons.chevron_left_rounded, size: 34, color: AppColors.secondaryText.withOpacity(0.7)),
+                    icon: Icon(Icons.chevron_left_rounded, size: 34, color: theme.iconTheme.color?.withOpacity(0.7)),
                     tooltip: 'Önceki Ay',
                     onPressed: () => calendarProvider.changeFocusedDay(DateTime(focusedDayForDisplay.year, focusedDayForDisplay.month - 1, 1)),
                   ),
                   IconButton(
-                    icon: Icon(Icons.chevron_right_rounded, size: 34, color: AppColors.secondaryText.withOpacity(0.7)),
+                    icon: Icon(Icons.chevron_right_rounded, size: 34, color: theme.iconTheme.color?.withOpacity(0.7)),
                     tooltip: 'Sonraki Ay',
                     onPressed: () => calendarProvider.changeFocusedDay(DateTime(focusedDayForDisplay.year, focusedDayForDisplay.month + 1, 1)),
                   ),
@@ -159,7 +160,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildCalendarGrid(BuildContext context, DateTime focusedDayForGrid, DateTime currentSelectedDay) {
+  Widget _buildCalendarGrid(BuildContext context, DateTime focusedDayForGrid, DateTime currentSelectedDay, ThemeData theme) {
     final calendarProvider = context.watch<CalendarProvider>();
     final List<String> dayAbbreviations = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
@@ -193,7 +194,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: dayAbbreviations
-                .map((day) => Text(day, style: TextStyle(color: AppColors.calendarDayText, fontWeight: FontWeight.w500, fontSize: 13)))
+                .map((day) => Text(day, style: TextStyle(color: theme.textTheme.bodySmall?.color, fontWeight: FontWeight.w500, fontSize: 13)))
                 .toList(),
           ),
           const SizedBox(height: 12),
@@ -219,9 +220,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 child: Container(
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.calendarSelectedDayBackground : Colors.transparent,
+                    color: isSelected ? theme.colorScheme.primary.withOpacity(0.2) : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
-                    border: isToday && !isSelected ? Border.all(color: AppColors.calendarTodayBorder.withOpacity(0.6), width: 1.5) : null,
+                    border: isToday && !isSelected ? Border.all(color: theme.colorScheme.primary.withOpacity(0.6), width: 1.5) : null,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -229,7 +230,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       Text(
                         '${day.day}',
                         style: TextStyle(
-                          color: isSelected ? AppColors.primary : (isToday ? AppColors.calendarTodayBorder : AppColors.primaryText.withOpacity(0.8)),
+                          color: isSelected ? theme.colorScheme.primary : (isToday ? theme.colorScheme.primary : theme.textTheme.bodyLarge?.color?.withOpacity(0.8)),
                           fontWeight: isSelected || isToday ? FontWeight.bold : FontWeight.normal,
                           fontSize: 14,
                         ),
@@ -261,27 +262,31 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildEventsListSection(BuildContext context, List<TaskModel> tasks, bool isLoading, String? error) {
+  Widget _buildEventsListSection(BuildContext context, List<TaskModel> tasks, bool isLoading, String? error, ThemeData theme) {
     final calendarProvider = context.read<CalendarProvider>();
 
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: Padding(padding: const EdgeInsets.all(32.0), child: CircularProgressIndicator(color: theme.colorScheme.primary)));
     }
     if (error != null) {
-      return Center(child: Text(error, style: const TextStyle(color: AppColors.error)));
+      return Center(child: Padding(padding: const EdgeInsets.all(32.0), child: Text(error, style: TextStyle(color: theme.colorScheme.error))));
     }
     if (tasks.isEmpty) {
       return Container(
         width: double.infinity,
-        color: AppColors.wavyGreenish.withOpacity(0.7),
-        padding: const EdgeInsets.symmetric(vertical: 30),
+        color: theme.brightness == Brightness.light
+            ? AppColors.wavyGreenish.withOpacity(0.7)
+            : AppColors.wavyGreenish.withOpacity(0.2),
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
         alignment: Alignment.center,
-        child: Text("Bu gün için planlanmış görev yok.", style: TextStyle(color: AppColors.primaryText.withOpacity(0.7))),
+        child: Text("Bu gün için planlanmış görev yok.", style: theme.textTheme.bodyMedium),
       );
     }
 
     return Container(
-      color: AppColors.wavyGreenish.withOpacity(0.7),
+      color: theme.brightness == Brightness.light
+          ? AppColors.wavyGreenish.withOpacity(0.7)
+          : AppColors.wavyGreenish.withOpacity(0.2),
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -294,32 +299,33 @@ class _CalendarScreenState extends State<CalendarScreen> {
           if(task.categoryId.isNotEmpty) {
             category = context.read<CategoryProvider>().getCategoryById(task.categoryId);
           }
-          final Color categoryColor = category != null ? Color(category.colorValue) : Colors.grey;
+          final Color categoryColor = category != null ? Color(category.colorValue) : AppColors.disabled;
 
           return Card(
             margin: const EdgeInsets.only(bottom: 8.0),
-            elevation: 1.0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            elevation: theme.cardTheme.elevation,
+            shape: theme.cardTheme.shape,
+            color: theme.cardTheme.color,
             child: ListTile(
               leading: Container(width: 5, height: 40, color: categoryColor),
               title: Text(
                 task.title,
                 style: TextStyle(
                   decoration: task.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                  color: task.isCompleted ? AppColors.secondaryText : AppColors.primaryText,
+                  color: task.isCompleted ? theme.textTheme.bodyMedium?.color : theme.textTheme.bodyLarge?.color,
                   fontWeight: task.isCompleted ? FontWeight.normal : FontWeight.w500,
                 ),
               ),
               subtitle: task.startDateTime != null || task.endDateTime != null
                   ? Text(
                 "${task.startDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.startDateTime!) : ''}${task.startDateTime != null && task.endDateTime != null ? ' - ' : ''}${task.endDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.endDateTime!) : ''}".trim() == "-" ? DateFormat('dd MMM', 'tr_TR').format(task.endDateTime ?? task.startDateTime!) : "${task.startDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.startDateTime!) : ''}${task.startDateTime != null && task.endDateTime != null ? ' - ' : ''}${task.endDateTime != null ? DateFormat('HH:mm', 'tr_TR').format(task.endDateTime!) : ''}",
-                style: TextStyle(fontSize: 12, color: AppColors.secondaryText),
+                style: theme.textTheme.bodySmall,
               )
                   : null,
               trailing: IconButton(
                 icon: Icon(
                   task.isCompleted ? Icons.check_box_outlined : Icons.check_box_outline_blank_rounded,
-                  color: task.isCompleted ? AppColors.primary : AppColors.secondaryText,
+                  color: task.isCompleted ? theme.colorScheme.primary : theme.iconTheme.color?.withOpacity(0.7),
                 ),
                 onPressed: () {
                   calendarProvider.toggleTaskCompletionOnCalendar(task.id);
@@ -342,7 +348,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 }
 
 class _WavyDecorationSection extends StatelessWidget {
-  const _WavyDecorationSection({super.key});
+  final ThemeData theme;
+  const _WavyDecorationSection({required this.theme});
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -350,8 +357,8 @@ class _WavyDecorationSection extends StatelessWidget {
       width: double.infinity,
       child: CustomPaint(
         painter: WavyLinePainter(
-          waveColor1: AppColors.wavyBlueish,
-          waveColor2: AppColors.wavyGreenish.withOpacity(0.7),
+          waveColor1: theme.brightness == Brightness.light ? AppColors.wavyBlueish : AppColors.wavyBlueish.withOpacity(0.15),
+          waveColor2: theme.brightness == Brightness.light ? AppColors.wavyGreenish.withOpacity(0.7) : AppColors.wavyGreenish.withOpacity(0.2),
         ),
         child: Stack(
           clipBehavior: Clip.none,
@@ -359,11 +366,11 @@ class _WavyDecorationSection extends StatelessWidget {
             Positioned(
                 top: -8,
                 left: MediaQuery.of(context).size.width * 0.22,
-                child: Icon(Icons.ac_unit, color: AppColors.wavyBlueish.withOpacity(0.9), size: 18)),
+                child: Icon(Icons.ac_unit, color: (theme.brightness == Brightness.light ? AppColors.wavyBlueish : AppColors.wavyBlueish.withOpacity(0.15)).withOpacity(0.9), size: 18)),
             Positioned(
                 top: 0,
                 left: MediaQuery.of(context).size.width * 0.32,
-                child: Icon(Icons.drag_handle_rounded, color: AppColors.wavyBlueish.withOpacity(0.9), size: 18)),
+                child: Icon(Icons.drag_handle_rounded, color: (theme.brightness == Brightness.light ? AppColors.wavyBlueish : AppColors.wavyBlueish.withOpacity(0.15)).withOpacity(0.9), size: 18)),
           ],
         ),
       ),

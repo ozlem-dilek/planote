@@ -33,14 +33,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   void initState() {
     super.initState();
     if (widget.preSelectedDate != null) {
-      // Eğer bir tarih önceden seçilmişse, hem başlangıç hem de bitiş için onu kullan
       _selectedStartDate = widget.preSelectedDate;
       _selectedEndDate = widget.preSelectedDate;
-      // Saatleri varsayılan olarak null bırakabiliriz veya o anki saati atayabiliriz
-      // _selectedStartTime = TimeOfDay.fromDateTime(DateTime.now());
-      // _selectedEndTime = TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1)));
     } else {
-      // Varsayılan olarak bitiş bugünün tarihi, saat tanımsız
       _selectedEndDate = DateTime.now();
       _selectedEndTime = null;
     }
@@ -79,6 +74,20 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     DateTime? initialDate,
     TimeOfDay? initialTime,
   }) async {
+    final ThemeData currentTheme = Theme.of(context);
+    final ColorScheme pickerColorScheme = currentTheme.brightness == Brightness.light
+        ? const ColorScheme.light(
+      primary: AppColors.primary,
+      onPrimary: AppColors.whiteText,
+      onSurface: AppColors.primaryText,
+    )
+        : const ColorScheme.dark(
+      primary: AppColors.primaryLight,
+      onPrimary: AppColors.blackText,
+      onSurface: AppColors.whiteText,
+      surface: AppColors.primaryDark,
+    );
+
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: initialDate ?? DateTime.now(),
@@ -87,13 +96,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       locale: const Locale('tr', 'TR'),
       builder: (context, child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: AppColors.whiteText,
-              onSurface: AppColors.primaryText,
-            ),
-            dialogBackgroundColor: AppColors.screenBackground,
+          data: currentTheme.copyWith(
+            colorScheme: pickerColorScheme,
+            dialogBackgroundColor: currentTheme.cardColor,
           ),
           child: child!,
         );
@@ -107,14 +112,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         initialTime: initialTime ?? TimeOfDay.fromDateTime(initialDate ?? DateTime.now()),
         builder: (context, child) {
           return Theme(
-            data: ThemeData.light().copyWith(
-              colorScheme: const ColorScheme.light(
-                primary: AppColors.primary,
-                onPrimary: AppColors.whiteText,
-                onSurface: AppColors.primaryText,
-                surface: AppColors.screenBackground,
-              ),
-              dialogBackgroundColor: AppColors.screenBackground,
+            data: currentTheme.copyWith(
+              colorScheme: pickerColorScheme.copyWith(surface: currentTheme.cardColor),
             ),
             child: child!,
           );
@@ -267,21 +266,22 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   @override
   Widget build(BuildContext context) {
     final categoryProvider = context.watch<CategoryProvider>();
+    final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.screenBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Yeni Görev Ekle', style: TextStyle(color: AppColors.primaryText)),
-        backgroundColor: AppColors.screenBackground,
+        title: Text('Yeni Görev Ekle', style: theme.appBarTheme.titleTextStyle),
+        backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primaryText),
+        iconTheme: theme.appBarTheme.iconTheme,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: Icon(Icons.close_rounded, color: theme.appBarTheme.iconTheme?.color),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check_rounded),
+            icon: Icon(Icons.check_rounded, color: theme.appBarTheme.actionsIconTheme?.color),
             tooltip: 'Kaydet',
             onPressed: _saveTask,
           ),
@@ -294,10 +294,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           children: <Widget>[
             TextFormField(
               controller: _titleController,
-              decoration: const InputDecoration(
+              style: theme.textTheme.bodyLarge,
+              decoration: InputDecoration(
                 labelText: 'Görev Başlığı',
                 hintText: 'Ne yapılması gerekiyor?',
-                prefixIcon: Icon(Icons.title_rounded),
+                prefixIcon: Icon(Icons.title_rounded, color: theme.inputDecorationTheme.prefixIconColor),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -309,24 +310,25 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             const SizedBox(height: 16.0),
             TextFormField(
               controller: _descriptionController,
-              decoration: const InputDecoration(
+              style: theme.textTheme.bodyLarge,
+              decoration: InputDecoration(
                 labelText: 'Açıklama (Opsiyonel)',
                 hintText: 'Görevin detayları...',
-                prefixIcon: Icon(Icons.description_outlined),
+                prefixIcon: Icon(Icons.description_outlined, color: theme.inputDecorationTheme.prefixIconColor),
               ),
               maxLines: 3,
             ),
             const SizedBox(height: 20.0),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.play_circle_outline_rounded, color: AppColors.primary),
+              leading: Icon(Icons.play_circle_outline_rounded, color: theme.colorScheme.primary),
               title: Text(
                 'Başlangıç: ${_formatDateTime(_selectedStartDate, _selectedStartTime)}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primaryText),
+                style: theme.textTheme.titleMedium,
               ),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                if (_selectedStartDate != null || _selectedStartTime != null) IconButton(icon: const Icon(Icons.clear_rounded, size: 20, color: AppColors.secondaryText), tooltip: 'Temizle', onPressed: (){ setState(() { _selectedStartDate = null; _selectedStartTime = null; }); }),
-                const Icon(Icons.edit_calendar_outlined, color: AppColors.secondaryText),
+                if (_selectedStartDate != null || _selectedStartTime != null) IconButton(icon: Icon(Icons.clear_rounded, size: 20, color: theme.iconTheme.color?.withOpacity(0.7)), tooltip: 'Temizle', onPressed: (){ setState(() { _selectedStartDate = null; _selectedStartTime = null; }); }),
+                Icon(Icons.edit_calendar_outlined, color: theme.iconTheme.color?.withOpacity(0.7)),
               ]),
               onTap: () => _pickDateTime(
                   context: context,
@@ -335,17 +337,17 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   initialTime: _selectedStartTime
               ),
             ),
-            const Divider(),
+            Divider(color: theme.dividerColor),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.check_circle_outline_rounded, color: AppColors.primary),
+              leading: Icon(Icons.check_circle_outline_rounded, color: theme.colorScheme.primary),
               title: Text(
                 'Bitiş: ${_formatDateTime(_selectedEndDate, _selectedEndTime)}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primaryText),
+                style: theme.textTheme.titleMedium,
               ),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                if (_selectedEndDate != null || _selectedEndTime != null) IconButton(icon: const Icon(Icons.clear_rounded, size: 20, color: AppColors.secondaryText), tooltip: 'Temizle', onPressed: (){ setState(() { _selectedEndDate = null; _selectedEndTime = null; }); }),
-                const Icon(Icons.edit_calendar_outlined, color: AppColors.secondaryText),
+                if (_selectedEndDate != null || _selectedEndTime != null) IconButton(icon: Icon(Icons.clear_rounded, size: 20, color: theme.iconTheme.color?.withOpacity(0.7)), tooltip: 'Temizle', onPressed: (){ setState(() { _selectedEndDate = null; _selectedEndTime = null; }); }),
+                Icon(Icons.edit_calendar_outlined, color: theme.iconTheme.color?.withOpacity(0.7)),
               ]),
               onTap: () => _pickDateTime(
                   context: context,
@@ -354,7 +356,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   initialTime: _selectedEndTime
               ),
             ),
-            const Divider(),
+            Divider(color: theme.dividerColor),
             const SizedBox(height: 8),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,16 +367,16 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       : categoryProvider.error != null && categoryProvider.categories.isEmpty
                       ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20.0),
-                    child: Text("Kategoriler yüklenemedi: ${categoryProvider.error}", style: const TextStyle(color: AppColors.error)),
+                    child: Text("Kategoriler yüklenemedi: ${categoryProvider.error}", style: TextStyle(color: theme.colorScheme.error)),
                   )
                       : DropdownButtonFormField<CategoryModel>(
                     decoration: InputDecoration(
                       labelText: 'Kategori',
-                      prefixIcon: const Icon(Icons.category_outlined),
-                      border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      prefixIcon: Icon(Icons.category_outlined, color: theme.inputDecorationTheme.prefixIconColor),
                       hintText: categoryProvider.categories.isEmpty ? 'Önce kategori ekleyin' : 'Bir kategori seçin',
                     ),
+                    dropdownColor: theme.cardColor,
+                    style: theme.textTheme.titleMedium,
                     value: (_selectedCategory != null && categoryProvider.categories.any((cat) => cat.id == _selectedCategory!.id))
                         ? _selectedCategory
                         : null,
@@ -398,7 +400,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0, top: 4.0),
                   child: IconButton(
-                    icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary, size: 28),
+                    icon: Icon(Icons.add_circle_outline_rounded, color: theme.colorScheme.primary, size: 28),
                     tooltip: 'Yeni Kategori Ekle',
                     onPressed: _showAddCategoryDialog,
                   ),
@@ -406,18 +408,16 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               ],
             ),
             if (categoryProvider.categories.isEmpty && !categoryProvider.isLoading && categoryProvider.error == null)
-              const Padding(
-                padding: EdgeInsets.only(top: 8.0, left: 4.0),
-                child: Text("Henüz kategori eklenmemiş. '+' ikonuna basarak yeni bir kategori ekleyebilirsiniz.", style: TextStyle(color: AppColors.secondaryText)),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0, left: 4.0),
+                child: Text("Henüz kategori eklenmemiş. '+' ikonuna basarak yeni bir kategori ekleyebilirsiniz.", style: theme.textTheme.bodySmall),
               ),
             const SizedBox(height: 30),
             ElevatedButton.icon(
               icon: const Icon(Icons.save_alt_rounded),
               label: const Text('Görevi Kaydet'),
               onPressed: (categoryProvider.isLoading && categoryProvider.categories.isEmpty && _selectedCategory == null) ? null : _saveTask,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-              ),
+              style: theme.elevatedButtonTheme.style,
             ),
           ],
         ),
