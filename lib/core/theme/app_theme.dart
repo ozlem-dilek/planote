@@ -15,10 +15,10 @@ class AppTheme {
             600: AppColors.primaryDark, 700: AppColors.primaryDark,
             800: AppColors.primaryDark, 900: AppColors.primaryDark,
           }),
-          accentColor: AppColors.accent, // accentColor artık colorScheme.secondary
+          accentColor: AppColors.accent,
           backgroundColor: AppColors.screenBackground,
           errorColor: AppColors.error,
-          brightness: Brightness.light, // Açık tema olduğunu belirt
+          brightness: Brightness.light,
         ).copyWith(secondary: AppColors.accent),
 
         scaffoldBackgroundColor: AppColors.screenBackground,
@@ -36,12 +36,12 @@ class AppTheme {
             fontFamily: 'Poppins',
           ),
         ),
-        textTheme: const TextTheme( /* ... mevcut light theme textTheme'iniz ... */ ),
+        textTheme: const TextTheme( /* ... mevcut light theme textTheme... */ ),
         iconTheme: const IconThemeData(color: AppColors.primaryText, size: 24.0),
         buttonTheme: ButtonThemeData( /* ... */ ),
         elevatedButtonTheme: ElevatedButtonThemeData( /* ... */ ),
         inputDecorationTheme: InputDecorationTheme( /* ... */ ),
-        cardTheme: CardTheme( // Kartlar için varsayılan
+        cardTheme: CardTheme(
           elevation: 1.0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
           color: AppColors.cardBackground,
@@ -50,10 +50,9 @@ class AppTheme {
     );
   }
 
-  // YENİ: Koyu Tema Tanımı
   static ThemeData get darkTheme {
     return ThemeData(
-      primaryColor: AppColors.primary, // Koyu temada da ana renk aynı kalabilir veya değişebilir
+      primaryColor: AppColors.primary,
       primaryColorLight: AppColors.primaryLight,
       primaryColorDark: AppColors.primaryDark,
       colorScheme: ColorScheme.fromSwatch(
@@ -64,18 +63,18 @@ class AppTheme {
           600: AppColors.primaryDark, 700: AppColors.primaryDark,
           800: AppColors.primaryDark, 900: AppColors.primaryDark,
         }),
-        accentColor: AppColors.accent, // Koyu temada accent farklı olabilir
-        backgroundColor: const Color(0xFF121212), // Tipik koyu tema arkaplanı
+        accentColor: AppColors.accent,
+        backgroundColor: const Color(0xFF121212),
         errorColor: Colors.redAccent.shade100,
-        brightness: Brightness.dark, // Koyu tema olduğunu belirt
+        brightness: Brightness.dark,
       ).copyWith(secondary: AppColors.accent),
 
-      scaffoldBackgroundColor: const Color(0xFF1E1E1E), // Koyu tema için scaffold arkaplanı
+      scaffoldBackgroundColor: const Color(0xFF1E1E1E),
       fontFamily: 'Poppins',
 
       appBarTheme: AppBarTheme(
         elevation: 0,
-        backgroundColor: const Color(0xFF1E1E1E), // Koyu tema AppBar arkaplanı
+        backgroundColor: const Color(0xFF1E1E1E),
         iconTheme: IconThemeData(color: AppColors.whiteText.withOpacity(0.87)),
         actionsIconTheme: IconThemeData(color: AppColors.whiteText.withOpacity(0.87)),
         titleTextStyle: TextStyle(
@@ -103,21 +102,21 @@ class AppTheme {
 
       buttonTheme: ButtonThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-        buttonColor: AppColors.primary, // Koyu temada buton rengi
+        buttonColor: AppColors.primary,
         textTheme: ButtonTextTheme.primary,
       ),
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.primaryText, // Koyu tema için buton metin rengi
+          foregroundColor: AppColors.primaryText,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Poppins'),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         ),
       ),
 
-      inputDecorationTheme: InputDecorationTheme( // Koyu tema için input stilleri
+      inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
           borderSide: BorderSide(color: AppColors.whiteText.withOpacity(0.3), width: 0.5),
@@ -142,13 +141,13 @@ class AppTheme {
         hintStyle: TextStyle(color: AppColors.whiteText.withOpacity(0.40), fontFamily: 'Poppins'),
         prefixIconColor: AppColors.whiteText.withOpacity(0.60),
       ),
-      cardTheme: CardTheme( // Koyu tema kartları için
+      cardTheme: CardTheme(
         elevation: 1.0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-        color: const Color(0xFF2A2A2A), // Koyu kart arka planı
+        color: const Color(0xFF2A2A2A),
         margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0),
       ),
-      dividerColor: AppColors.whiteText.withOpacity(0.12), // Koyu tema ayırıcı çizgileri
+      dividerColor: AppColors.whiteText.withOpacity(0.12),
     );
   }
 }

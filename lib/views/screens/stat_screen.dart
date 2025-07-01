@@ -11,21 +11,22 @@ class IstatistiklerEkrani extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statsProvider = context.watch<StatsProvider>();
+    final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.screenBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0.5,
-        backgroundColor: AppColors.screenBackground,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
+        title: Text(
           'İstatistikler',
-          style: TextStyle(color: AppColors.primaryText, fontWeight: FontWeight.bold),
+          style: theme.appBarTheme.titleTextStyle,
         ),
         leading: Builder(
           builder: (BuildContext context) {
             return IconButton(
-              icon: const Icon(Icons.menu, color: AppColors.primaryText),
+              icon: Icon(Icons.menu, color: theme.appBarTheme.iconTheme?.color),
               onPressed: () {
                 Scaffold.of(context).openDrawer();
               },
@@ -35,7 +36,7 @@ class IstatistiklerEkrani extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.primaryText),
+            icon: Icon(Icons.refresh_rounded, color: theme.appBarTheme.actionsIconTheme?.color),
             onPressed: () {
               context.read<StatsProvider>().fetchAllStats();
             },
@@ -54,7 +55,7 @@ class IstatistiklerEkrani extends StatelessWidget {
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
                     "İstatistikler yüklenemedi: ${statsProvider.error}",
-                    style: const TextStyle(color: AppColors.error, fontSize: 16),
+                    style: TextStyle(color: theme.colorScheme.error, fontSize: 16),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -68,33 +69,37 @@ class IstatistiklerEkrani extends StatelessWidget {
                 children: <Widget>[
                   _buildStatCard(
                     context: context,
+                    theme: theme,
                     title: "Görev Tamamlama Oranı",
-                    chartContent: _buildCompletionPieChart(statsProvider),
+                    chartContent: _buildCompletionPieChart(statsProvider, theme),
                     additionalInfo: statsProvider.totalTasks > 0
                         ? Text(
                       "${statsProvider.completedTasks} / ${statsProvider.totalTasks} görev tamamlandı.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.secondaryText, fontSize: 14),
+                      style: theme.textTheme.bodyMedium,
                     )
                         : null,
                   ),
                   const SizedBox(height: 20),
                   _buildStatCard(
                     context: context,
+                    theme: theme,
                     title: "Kategoriye Göre Görev Dağılımı",
-                    chartContent: _buildTasksByCategoryBarChart(statsProvider),
+                    chartContent: _buildTasksByCategoryBarChart(statsProvider, theme),
                   ),
                   const SizedBox(height: 20),
                   _buildStatCard(
                     context: context,
+                    theme: theme,
                     title: "Haftalık Aktivite (Tamamlanan Görevler)",
-                    chartContent: _buildWeeklyActivityChart(statsProvider),
+                    chartContent: _buildWeeklyActivityChart(statsProvider, theme),
                   ),
                   const SizedBox(height: 20),
                   _buildStatCard(
                     context: context,
+                    theme: theme,
                     title: "Aylık Tamamlanan Görev Sayısı",
-                    chartContent: _buildMonthlyCompletionLineChart(statsProvider),
+                    chartContent: _buildMonthlyCompletionLineChart(statsProvider, theme),
                   ),
                 ],
               ),
@@ -104,10 +109,12 @@ class IstatistiklerEkrani extends StatelessWidget {
     );
   }
 
-  Widget _buildCompletionPieChart(StatsProvider statsProvider) {
+  Widget _buildCompletionPieChart(StatsProvider statsProvider, ThemeData theme) {
     if (statsProvider.completionRateSections.isEmpty || statsProvider.totalTasks == 0) {
-      return _buildChartPlaceholder("Tamamlama oranı için yeterli veri yok.");
+      return _buildChartPlaceholder("Tamamlama oranı için yeterli veri yok.", theme);
     }
+    // PieChart section renkleri StatsProvider'da AppColors'tan geliyor, onlar sabit kalabilir
+    // veya tema ile uyumlu hale getirilebilir. Şimdilik StatsProvider'daki gibi.
     return SizedBox(
       height: 200,
       child: PieChart(
@@ -125,10 +132,12 @@ class IstatistiklerEkrani extends StatelessWidget {
     );
   }
 
-  Widget _buildTasksByCategoryBarChart(StatsProvider statsProvider) {
+  Widget _buildTasksByCategoryBarChart(StatsProvider statsProvider, ThemeData theme) {
     if (statsProvider.tasksByCategoryGroups.isEmpty) {
-      return _buildChartPlaceholder("Kategorilere göre görev dağılımı için veri yok.");
+      return _buildChartPlaceholder("Kategorilere göre görev dağılımı için veri yok.", theme);
     }
+    final axisLabelStyle = TextStyle(color: theme.textTheme.bodySmall?.color, fontWeight: FontWeight.bold, fontSize: 10);
+
     return SizedBox(
       height: 220,
       child: BarChart(
@@ -149,11 +158,7 @@ class IstatistiklerEkrani extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 6.0),
                       child: Text(
                         categoryName.length > 8 ? '${categoryName.substring(0,6)}...' : categoryName,
-                        style: const TextStyle(
-                          color: AppColors.secondaryText,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                        ),
+                        style: axisLabelStyle,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                       ),
@@ -170,7 +175,7 @@ class IstatistiklerEkrani extends StatelessWidget {
                 interval: _calculateBarChartInterval(statsProvider.tasksByCategoryGroups),
                 getTitlesWidget: (double value, TitleMeta meta) {
                   if (value == 0 || value == meta.max || value % _calculateBarChartInterval(statsProvider.tasksByCategoryGroups) == 0) {
-                    return Text(value.toInt().toString(), style: const TextStyle(color: AppColors.secondaryText, fontSize: 10));
+                    return Text(value.toInt().toString(), style: axisLabelStyle.copyWith(fontWeight: FontWeight.normal));
                   }
                   return Container();
                 },
@@ -185,14 +190,12 @@ class IstatistiklerEkrani extends StatelessWidget {
               drawVerticalLine: false,
               horizontalInterval: _calculateBarChartInterval(statsProvider.tasksByCategoryGroups),
               getDrawingHorizontalLine: (value) {
-                return FlLine(color: AppColors.secondaryText.withOpacity(0.1), strokeWidth: 1);
+                return FlLine(color: theme.dividerColor.withOpacity(0.5), strokeWidth: 1);
               }
           ),
-          barTouchData: BarTouchData(
+          barTouchData: BarTouchData( /* ... tooltip aynı ... */
             touchTooltipData: BarTouchTooltipData(
-              getTooltipColor: (BarChartGroupData group) {
-                return Colors.blueGrey.withOpacity(0.8);
-              },
+              getTooltipColor: (BarChartGroupData group) => Colors.blueGrey.withOpacity(0.9),
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 String categoryName;
                 if (group.x.toInt() >= 0 && group.x.toInt() < statsProvider.allCategoriesForChartTitles.length) {
@@ -203,16 +206,7 @@ class IstatistiklerEkrani extends StatelessWidget {
                 return BarTooltipItem(
                   '$categoryName\n',
                   const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                  children: <TextSpan>[
-                    TextSpan(
-                      text: (rod.toY.toInt()).toString(),
-                      style: TextStyle(
-                        color: rod.color ?? Colors.yellow,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  children: <TextSpan>[ TextSpan(text: (rod.toY.toInt()).toString(), style: TextStyle(color: rod.color ?? Colors.yellow, fontSize: 12, fontWeight: FontWeight.w500))],
                 );
               },
             ),
@@ -222,10 +216,12 @@ class IstatistiklerEkrani extends StatelessWidget {
     );
   }
 
-  Widget _buildWeeklyActivityChart(StatsProvider statsProvider) {
+  Widget _buildWeeklyActivityChart(StatsProvider statsProvider, ThemeData theme) {
     if (statsProvider.weeklyActivityGroups.isEmpty) {
-      return _buildChartPlaceholder("Haftalık aktivite için veri yok.");
+      return _buildChartPlaceholder("Haftalık aktivite için veri yok.", theme);
     }
+    final axisLabelStyle = TextStyle(color: theme.textTheme.bodySmall?.color, fontWeight: FontWeight.bold, fontSize: 10);
+
     return SizedBox(
       height: 220,
       child: BarChart(
@@ -243,10 +239,7 @@ class IstatistiklerEkrani extends StatelessWidget {
                   if (index >= 0 && index < statsProvider.last7DaysLabels.length) {
                     return Padding(
                       padding: const EdgeInsets.only(top: 6.0),
-                      child: Text(
-                          statsProvider.last7DaysLabels[index],
-                          style: const TextStyle(color: AppColors.secondaryText, fontWeight: FontWeight.bold, fontSize: 10)
-                      ),
+                      child: Text(statsProvider.last7DaysLabels[index], style: axisLabelStyle),
                     );
                   }
                   return Container();
@@ -260,7 +253,7 @@ class IstatistiklerEkrani extends StatelessWidget {
                 interval: _calculateBarChartInterval(statsProvider.weeklyActivityGroups, minInterval: 1),
                 getTitlesWidget: (double value, TitleMeta meta) {
                   if (value == 0 || value == meta.max || value % _calculateBarChartInterval(statsProvider.weeklyActivityGroups, minInterval: 1) == 0) {
-                    return Text(value.toInt().toString(), style: const TextStyle(color: AppColors.secondaryText, fontSize: 10));
+                    return Text(value.toInt().toString(), style: axisLabelStyle.copyWith(fontWeight: FontWeight.normal));
                   }
                   return Container();
                 },
@@ -275,12 +268,12 @@ class IstatistiklerEkrani extends StatelessWidget {
               drawVerticalLine: false,
               horizontalInterval: _calculateBarChartInterval(statsProvider.weeklyActivityGroups, minInterval: 1),
               getDrawingHorizontalLine: (value) {
-                return FlLine(color: AppColors.secondaryText.withOpacity(0.1), strokeWidth: 1);
+                return FlLine(color: theme.dividerColor.withOpacity(0.5), strokeWidth: 1);
               }
           ),
-          barTouchData: BarTouchData(
+          barTouchData: BarTouchData( /* ... tooltip aynı ... */
             touchTooltipData: BarTouchTooltipData(
-              getTooltipColor: (_) => Colors.blueGrey.withOpacity(0.8),
+              getTooltipColor: (_) => Colors.blueGrey.withOpacity(0.9),
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 String dayName = "";
                 if (group.x.toInt() >= 0 && group.x.toInt() < statsProvider.last7DaysLabels.length) {
@@ -289,16 +282,7 @@ class IstatistiklerEkrani extends StatelessWidget {
                 return BarTooltipItem(
                   '$dayName\n',
                   const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                  children: <TextSpan>[
-                    TextSpan(
-                      text: (rod.toY.toInt()).toString(),
-                      style: TextStyle(
-                        color: rod.color ?? Colors.yellow,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  children: <TextSpan>[TextSpan(text: (rod.toY.toInt()).toString(), style: TextStyle(color: rod.color ?? Colors.yellow, fontSize: 12, fontWeight: FontWeight.w500))],
                 );
               },
             ),
@@ -308,9 +292,9 @@ class IstatistiklerEkrani extends StatelessWidget {
     );
   }
 
-  Widget _buildMonthlyCompletionLineChart(StatsProvider statsProvider) {
+  Widget _buildMonthlyCompletionLineChart(StatsProvider statsProvider, ThemeData theme) {
     if (statsProvider.monthlyCompletionSpots.isEmpty) {
-      return _buildChartPlaceholder("Aylık tamamlama verisi yok.");
+      return _buildChartPlaceholder("Aylık tamamlama verisi yok.", theme);
     }
 
     double minY = 0;
@@ -326,6 +310,11 @@ class IstatistiklerEkrani extends StatelessWidget {
     double intervalY = (maxY / 5).ceilToDouble();
     if (intervalY == 0) intervalY = 1;
 
+    final axisLabelStyle = TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 10);
+    final primaryChartColor = theme.colorScheme.primary;
+    final primaryDarkChartColor = theme.primaryColorDark; // Veya theme.colorScheme.primaryContainer
+    final whiteChartColor = theme.brightness == Brightness.dark ? AppColors.primaryText : AppColors.whiteText;
+
 
     return SizedBox(
       height: 220,
@@ -340,12 +329,8 @@ class IstatistiklerEkrani extends StatelessWidget {
             drawVerticalLine: true,
             verticalInterval: 1,
             horizontalInterval: intervalY,
-            getDrawingHorizontalLine: (value) {
-              return FlLine(color: AppColors.secondaryText.withOpacity(0.1), strokeWidth: 1);
-            },
-            getDrawingVerticalLine: (value) {
-              return FlLine(color: AppColors.secondaryText.withOpacity(0.1), strokeWidth: 1);
-            },
+            getDrawingHorizontalLine: (value) => FlLine(color: theme.dividerColor.withOpacity(0.5), strokeWidth: 1),
+            getDrawingVerticalLine: (value) => FlLine(color: theme.dividerColor.withOpacity(0.5), strokeWidth: 1),
           ),
           titlesData: FlTitlesData(
             show: true,
@@ -359,10 +344,7 @@ class IstatistiklerEkrani extends StatelessWidget {
                   if (index >= 0 && index < statsProvider.last6MonthsLabels.length) {
                     return Padding(
                       padding: const EdgeInsets.only(top: 6.0),
-                      child: Text(
-                          statsProvider.last6MonthsLabels[index],
-                          style: const TextStyle(color: AppColors.secondaryText, fontWeight: FontWeight.bold, fontSize: 10)
-                      ),
+                      child: Text(statsProvider.last6MonthsLabels[index], style: axisLabelStyle.copyWith(fontWeight: FontWeight.bold)),
                     );
                   }
                   return Container();
@@ -376,7 +358,7 @@ class IstatistiklerEkrani extends StatelessWidget {
                 interval: intervalY,
                 getTitlesWidget: (double value, TitleMeta meta) {
                   if (value % intervalY == 0) {
-                    return Text(value.toInt().toString(), style: const TextStyle(color: AppColors.secondaryText, fontSize: 10));
+                    return Text(value.toInt().toString(), style: axisLabelStyle);
                   }
                   return Container();
                 },
@@ -387,29 +369,29 @@ class IstatistiklerEkrani extends StatelessWidget {
           ),
           borderData: FlBorderData(
             show: true,
-            border: Border.all(color: AppColors.secondaryText.withOpacity(0.2), width: 1),
+            border: Border.all(color: theme.dividerColor, width: 1),
           ),
           lineBarsData: [
             LineChartBarData(
               spots: statsProvider.monthlyCompletionSpots,
               isCurved: true,
-              color: AppColors.primary,
+              color: primaryChartColor,
               barWidth: 3,
               isStrokeCapRound: true,
               dotData: FlDotData(show: true, getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(radius: 4, color: AppColors.primaryDark, strokeWidth: 1, strokeColor: AppColors.whiteText);
+                return FlDotCirclePainter(radius: 4, color: primaryDarkChartColor, strokeWidth: 1, strokeColor: whiteChartColor);
               }),
               belowBarData: BarAreaData(
                 show: true,
-                color: AppColors.primary.withOpacity(0.1),
+                color: primaryChartColor.withOpacity(0.1),
               ),
               preventCurveOverShooting: true,
               preventCurveOvershootingThreshold: 1.0,
             ),
           ],
-          lineTouchData: LineTouchData(
+          lineTouchData: LineTouchData( /* ... tooltip aynı ... */
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (LineBarSpot touchedSpot) => Colors.blueGrey.withOpacity(0.8),
+              getTooltipColor: (LineBarSpot touchedSpot) => Colors.blueGrey.withOpacity(0.9),
               getTooltipItems: (List<LineBarSpot> touchedSpots) {
                 return touchedSpots.map((LineBarSpot touchedSpot) {
                   final monthIndex = touchedSpot.x.toInt();
@@ -420,19 +402,7 @@ class IstatistiklerEkrani extends StatelessWidget {
                   return LineTooltipItem(
                     '$monthName\n',
                     const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    children: [
-                      TextSpan(
-                        text: touchedSpot.y.toInt().toString(),
-                        style: TextStyle(
-                          color: touchedSpot.bar.gradient?.colors.first ?? touchedSpot.bar.color ?? Colors.blue,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const TextSpan(
-                        text: ' görev',
-                        style: TextStyle(fontWeight: FontWeight.normal),
-                      ),
-                    ],
+                    children: [ TextSpan(text: touchedSpot.y.toInt().toString(), style: TextStyle(color: touchedSpot.bar.gradient?.colors.first ?? touchedSpot.bar.color ?? Colors.blue, fontWeight: FontWeight.w900)), const TextSpan(text: ' görev', style: TextStyle(fontWeight: FontWeight.normal))],
                   );
                 }).toList();
               },
@@ -462,33 +432,35 @@ class IstatistiklerEkrani extends StatelessWidget {
     return calculatedInterval > minInterval ? calculatedInterval : minInterval;
   }
 
-  Widget _buildChartPlaceholder(String text) {
+  Widget _buildChartPlaceholder(String text, ThemeData theme) {
     return Container(
       height: 200,
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
+        color: theme.colorScheme.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
       ),
       alignment: Alignment.center,
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: TextStyle(color: AppColors.primary.withOpacity(0.7), fontSize: 16),
+        style: TextStyle(color: theme.colorScheme.primary.withOpacity(0.7), fontSize: 16),
       ),
     );
   }
 
   Widget _buildStatCard({
     required BuildContext context,
+    required ThemeData theme, // ThemeData eklendi
     required String title,
     required Widget chartContent,
     Widget? additionalInfo,
   }) {
     return Card(
-      elevation: 1.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-      color: AppColors.cardBackground,
+      elevation: theme.cardTheme.elevation ?? 1.0,
+      shape: theme.cardTheme.shape,
+      color: theme.cardTheme.color,
+      margin: theme.cardTheme.margin ?? const EdgeInsets.symmetric(vertical: 6.0),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -496,11 +468,7 @@ class IstatistiklerEkrani extends StatelessWidget {
           children: [
             Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.primaryText,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18
-              ),
+              style: theme.textTheme.titleLarge,
             ),
             if (additionalInfo != null) ...[
               const SizedBox(height: 8.0),

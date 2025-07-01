@@ -26,14 +26,29 @@ class MyCustomBottomBar extends StatelessWidget {
   });
 
   Widget _buildBarItem(BuildContext context, CustomBottomBarItemData item, int itemIndex) {
+    final ThemeData theme = Theme.of(context);
     bool isSelected = currentIndex == itemIndex;
 
+    Color iconColor = isSelected
+        ? theme.colorScheme.primary
+        : theme.iconTheme.color?.withOpacity(0.7) ?? theme.colorScheme.onSurface.withOpacity(0.7);
 
-    Color iconColor = isSelected ? AppColors.primary : AppColors.secondaryText.withOpacity(0.7);
-    Color labelColor = isSelected ? AppColors.primary : AppColors.secondaryText.withOpacity(0.9);
+    Color labelColor = isSelected
+        ? theme.colorScheme.primary
+        : theme.textTheme.bodySmall?.color ?? theme.colorScheme.onSurface.withOpacity(0.9);
+
     FontWeight labelFontWeight = isSelected ? FontWeight.bold : FontWeight.normal;
     double iconSize = 24;
     double labelFontSize = 11;
+
+    if (isSelected && item.hasLabel) {
+      // Seçili ve etiketli item için AppColors'tan gelen özel bir renk kullanabiliriz (opsiyonel)
+      // veya tema birincil rengini koruyabiliriz. Önceki gibi AppColors.primary kullanılıyordu.
+      // Şimdilik tema birincil rengini kullanalım.
+      // iconColor = AppColors.primary; // Eğer özel bir seçili renk isteniyorsa
+      // labelColor = AppColors.primary;
+    }
+
 
     return Expanded(
       child: InkWell(
@@ -73,15 +88,19 @@ class MyCustomBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Material(
       elevation: 8.0,
-      color: AppColors.cardBackground, // Veya AppColors.customBottomBarBackground
+      color: theme.bottomAppBarTheme.color ?? theme.colorScheme.surface,
       child: SizedBox(
         height: 60,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: List.generate(items.length, (index) {
-            return _buildBarItem(context, items[index], index);
+            if (index < items.length) {
+              return _buildBarItem(context, items[index], index);
+            }
+            return const SizedBox.shrink();
           }),
         ),
       ),

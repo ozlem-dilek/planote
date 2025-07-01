@@ -5,7 +5,7 @@ import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class LoginScreen extends StatefulWidget ,2,
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override

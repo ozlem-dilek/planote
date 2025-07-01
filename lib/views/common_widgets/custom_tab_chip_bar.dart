@@ -23,6 +23,7 @@ class CustomTabChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     Color effectiveBackgroundColor;
     Color effectiveTextColor;
     Color effectiveBorderColor;
@@ -31,18 +32,18 @@ class CustomTabChip extends StatelessWidget {
 
     if (isSelected) {
       if (activeCategoryColor != null) {
-        effectiveBackgroundColor = activeCategoryColor!.withOpacity(0.15);
+        effectiveBackgroundColor = activeCategoryColor!.withOpacity(0.20);
         effectiveTextColor = activeCategoryColor!;
         effectiveBorderColor = activeCategoryColor!;
       } else {
-        effectiveBackgroundColor = AppColors.primary.withOpacity(0.12);
-        effectiveTextColor = AppColors.primary;
-        effectiveBorderColor = AppColors.primary;
+        effectiveBackgroundColor = theme.colorScheme.primary.withOpacity(0.15);
+        effectiveTextColor = theme.colorScheme.primary;
+        effectiveBorderColor = theme.colorScheme.primary;
       }
     } else {
-      effectiveBackgroundColor = AppColors.chipBarBackground.withOpacity(0.5);
-      effectiveTextColor = AppColors.secondaryText;
-      effectiveBorderColor = AppColors.secondaryText.withOpacity(0.4);
+      effectiveBackgroundColor = theme.chipTheme.backgroundColor ?? theme.colorScheme.surfaceVariant.withOpacity(0.5);
+      effectiveTextColor = theme.chipTheme.labelStyle?.color ?? theme.colorScheme.onSurfaceVariant;
+      effectiveBorderColor = theme.colorScheme.outline.withOpacity(0.5);
     }
 
     return GestureDetector(
@@ -54,7 +55,7 @@ class CustomTabChip extends StatelessWidget {
           borderRadius: borderRadius ?? BorderRadius.circular(20),
           border: Border.all(
             color: effectiveBorderColor,
-            width: 1.2,
+            width: isSelected ? 1.5 : 1.2,
           ),
         ),
         child: Text(
