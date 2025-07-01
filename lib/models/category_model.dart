@@ -1,6 +1,6 @@
 import 'package:hive/hive.dart';
-part 'category_model.g.dart'; // build_runner ile üretilecek.
-//modellerin Hive tarafından nasıl saklanıp okunacağını tanımlar.
+
+part 'category_model.g.dart';
 
 @HiveType(typeId: 0)
 class CategoryModel extends HiveObject {
@@ -13,9 +13,13 @@ class CategoryModel extends HiveObject {
   @HiveField(2)
   late int colorValue;
 
+  @HiveField(3)
+  late String userId;
+
   CategoryModel({
     required this.id,
     required this.name,
     required this.colorValue,
+    required this.userId,
   });
 }

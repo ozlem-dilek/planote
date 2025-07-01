@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+
 part 'task_model.g.dart';
 
 @HiveType(typeId: 1)
@@ -27,8 +28,11 @@ class TaskModel extends HiveObject {
   @HiveField(7)
   DateTime? startDateTime;
 
-  @HiveField(8) // YENİ ALAN
+  @HiveField(8)
   DateTime? completedAt;
+
+  @HiveField(9)
+  late String userId;
 
   TaskModel({
     required this.id,
@@ -40,5 +44,6 @@ class TaskModel extends HiveObject {
     required this.categoryId,
     this.createdAt,
     this.completedAt,
+    required this.userId,
   });
 }
