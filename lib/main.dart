@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
-import 'views/screens/app_shell.dart';
-import 'views/screens/login_screen.dart';
+import 'view/screens/app_shell.dart';
+import 'view/screens/login_screen.dart';
 
 import 'models/category_model.dart';
 import 'models/task_model.dart';
@@ -25,31 +25,6 @@ import 'providers/auth_provider.dart';
 const String categoriesBoxName = 'categoriesBox';
 const String tasksBoxName = 'tasksBox';
 const String usersBoxName = 'usersBox';
-
-void printAllTasks() async {
-  final tasksBox = Hive.box<TaskModel>(tasksBoxName);
-  print("--- Tüm Görevler (${tasksBox.length} adet) ---");
-  for (var task in tasksBox.values) {
-    print("ID: ${task.id}, Başlık: ${task.title}, Bitiş: ${task.endDateTime}, Tamamlandı: ${task.isCompleted}, KategoriID: ${task.categoryId}");
-  }
-}
-
-void printAllCategories() async {
-  final categoriesBox = Hive.box<CategoryModel>(categoriesBoxName);
-  print("--- Tüm Kategoriler (${categoriesBox.length} adet) ---");
-  for (var category in categoriesBox.values) {
-    print("ID: ${category.id}, Ad: ${category.name}, Renk: ${Color(category.colorValue)}");
-  }
-}
-
-void printAllUsers() async {
-  final usersBox = Hive.box<UserModel>(usersBoxName);
-  print("--- Tüm Kullanıcılar (${usersBox.length} adet) ---");
-  for (var user in usersBox.values) {
-    print("ID: ${user.userId}, Kullanıcı Adı: ${user.username}, Email: ${user.email}");
-  }
-}
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,9 +46,7 @@ void main() async {
   await Hive.openBox<TaskModel>(tasksBoxName);
   await Hive.openBox<UserModel>(usersBoxName);
 
-  printAllTasks();
-  printAllCategories();
-  printAllUsers();
+  // TODO: Uygulama ilk kez çalışıyorsa veya yeni kullanıcı için varsayılan kategoriler eklenebilir (CategoryService içinde)
 
   runApp(const MyApp());
 }
@@ -88,28 +61,35 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<ThemeProvider>(
           create: (_) => ThemeProvider(),
         ),
-        Provider<CategoryService>(
-          create: (_) => CategoryService(),
-        ),
-        ChangeNotifierProvider<CategoryProvider>(
-          create: (context) => CategoryProvider(context.read<CategoryService>()),
-        ),
-        Provider<TaskService>(
-          create: (_) => TaskService(),
-        ),
-        ChangeNotifierProvider<TaskProvider>(
-          create: (context) => TaskProvider(context.read<TaskService>()),
-        ),
         Provider<AuthService>(
           create: (_) => AuthService(),
         ),
         ChangeNotifierProvider<AuthProvider>(
           create: (context) => AuthProvider(context.read<AuthService>()),
         ),
+        Provider<CategoryService>(
+          create: (_) => CategoryService(),
+        ),
+        ChangeNotifierProvider<CategoryProvider>(
+          create: (context) => CategoryProvider(
+            context.read<CategoryService>(),
+            context.read<AuthProvider>(),
+          ),
+        ),
+        Provider<TaskService>(
+          create: (_) => TaskService(),
+        ),
+        ChangeNotifierProvider<TaskProvider>(
+          create: (context) => TaskProvider(
+            context.read<TaskService>(),
+            context.read<AuthProvider>(),
+          ),
+        ),
         ChangeNotifierProvider<CalendarProvider>(
           create: (context) => CalendarProvider(
             context.read<TaskService>(),
             context.read<CategoryService>(),
+            context.read<AuthProvider>(),
             context.read<TaskProvider>(),
           ),
         ),
@@ -117,6 +97,7 @@ class MyApp extends StatelessWidget {
           create: (context) => StatsProvider(
             context.read<TaskService>(),
             context.read<CategoryService>(),
+            context.read<AuthProvider>(),
           ),
         ),
       ],
@@ -147,4 +128,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
