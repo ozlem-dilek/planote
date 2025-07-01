@@ -28,70 +28,83 @@ class ManageCategoriesScreen extends StatelessWidget {
     final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
     final TextEditingController nameController = TextEditingController(text: categoryToEdit.name);
     Color selectedColor = Color(categoryToEdit.colorValue);
+    final formKey = GlobalKey<FormState>();
 
     final bool? updated = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
             builder: (stfContext, stfSetState) {
+              final ThemeData dialogTheme = Theme.of(dialogContext);
               return AlertDialog(
-                title: const Text('Kategoriyi Düzenle'),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      TextFormField(
-                        controller: nameController,
-                        decoration: const InputDecoration(labelText: 'Kategori Adı'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Lütfen bir kategori adı girin.';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      const Text('Renk Seçin:'),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8.0,
-                        runSpacing: 8.0,
-                        children: AppColors.defaultCategoryColors.map((color) {
-                          return GestureDetector(
-                            onTap: () {
-                              stfSetState(() {
-                                selectedColor = color;
-                              });
-                            },
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: selectedColor == color
-                                      ? Theme.of(context).primaryColorDark
-                                      : Colors.grey.shade300,
-                                  width: selectedColor == color ? 3.0 : 1.5,
+                backgroundColor: dialogTheme.cardColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                title: Text('Kategoriyi Düzenle', style: dialogTheme.textTheme.titleLarge),
+                content: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        TextFormField(
+                          controller: nameController,
+                          style: dialogTheme.textTheme.bodyLarge,
+                          decoration: InputDecoration(
+                            labelText: 'Kategori Adı',
+                            labelStyle: dialogTheme.textTheme.bodyMedium,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Lütfen bir kategori adı girin.';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        Text('Renk Seçin:', style: dialogTheme.textTheme.bodyMedium),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8.0,
+                          runSpacing: 8.0,
+                          children: AppColors.defaultCategoryColors.map((color) {
+                            return GestureDetector(
+                              onTap: () {
+                                stfSetState(() {
+                                  selectedColor = color;
+                                });
+                              },
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: selectedColor == color
+                                        ? dialogTheme.colorScheme.primary
+                                        : dialogTheme.dividerColor,
+                                    width: selectedColor == color ? 3.0 : 1.5,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 actions: <Widget>[
                   TextButton(
-                    child: const Text('İptal'),
+                    child: Text('İptal', style: TextStyle(color: dialogTheme.colorScheme.secondary)),
                     onPressed: () => Navigator.of(dialogContext).pop(false),
                   ),
                   ElevatedButton(
-                    child: const Text('Güncelle'),
+                    style: ElevatedButton.styleFrom(backgroundColor: dialogTheme.colorScheme.primary),
+                    child: Text('Güncelle', style: TextStyle(color: dialogTheme.colorScheme.onPrimary)),
                     onPressed: () {
-                      if (nameController.text.isNotEmpty) {
+                      if (formKey.currentState!.validate()) {
                         final updatedCategory = CategoryModel(
                           id: categoryToEdit.id,
                           name: nameController.text,
@@ -99,6 +112,11 @@ class ManageCategoriesScreen extends StatelessWidget {
                         );
                         categoryProvider.updateCategory(updatedCategory).then((_){
                           if (dialogContext.mounted) Navigator.of(dialogContext).pop(true);
+                        }).catchError((e){
+                          if (dialogContext.mounted) {
+                            Navigator.of(dialogContext).pop(false);
+                            ScaffoldMessenger.of(stfContext).showSnackBar(SnackBar(content: Text("Güncelleme hatası: $e"), backgroundColor: AppColors.error));
+                          }
                         });
                       }
                     },
@@ -130,16 +148,22 @@ class ManageCategoriesScreen extends StatelessWidget {
       final bool? confirmed = await showDialog<bool>(
         context: context,
         builder: (BuildContext dialogContext) {
+          final ThemeData dialogTheme = Theme.of(dialogContext);
           return AlertDialog(
-            title: const Text('Kategoriyi Sil'),
-            content: Text(result['message'] ?? 'Bu kategoride ${result['taskCount']} görev var. Silmek istediğinize emin misiniz? İlişkili görevler "Diğer" kategorisine taşınacak.'),
+            backgroundColor: dialogTheme.cardColor,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            title: Text('Kategoriyi Sil', style: dialogTheme.textTheme.titleLarge),
+            content: Text(
+              result['message'] ?? 'Bu kategoride ${result['taskCount']} görev var. Silmek istediğinize emin misiniz? İlişkili görevler "Diğer" kategorisine taşınacak.',
+              style: dialogTheme.textTheme.bodyMedium,
+            ),
             actions: <Widget>[
               TextButton(
-                child: const Text('İptal'),
+                child: Text('İptal', style: TextStyle(color: dialogTheme.colorScheme.secondary)),
                 onPressed: () => Navigator.of(dialogContext).pop(false),
               ),
               TextButton(
-                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                style: TextButton.styleFrom(foregroundColor: dialogTheme.colorScheme.error),
                 child: const Text('Sil'),
                 onPressed: () => Navigator.of(dialogContext).pop(true),
               ),
@@ -151,28 +175,32 @@ class ManageCategoriesScreen extends StatelessWidget {
       if (confirmed == true && context.mounted) {
         await categoryProvider.deleteCategoryConfirmed(categoryToDelete.id);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"${categoryToDelete.name}" kategorisi ve ilişkili görevler güncellendi/silindi.')),
+          SnackBar(content: Text('"${categoryToDelete.name}" kategorisi ve ilişkili görevler güncellendi.')),
         );
       }
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final categoryProvider = context.watch<CategoryProvider>();
+    final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.screenBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Kategorileri Yönet', style: TextStyle(color: AppColors.primaryText)),
-        backgroundColor: AppColors.screenBackground,
+        title: Text('Kategorileri Yönet', style: theme.appBarTheme.titleTextStyle),
+        backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0.5,
-        iconTheme: const IconThemeData(color: AppColors.primaryText),
+        iconTheme: theme.appBarTheme.iconTheme,
         surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: theme.appBarTheme.iconTheme?.color),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline_rounded),
+            icon: Icon(Icons.add_circle_outline_rounded, color: theme.appBarTheme.actionsIconTheme?.color),
             tooltip: 'Yeni Kategori Ekle',
             onPressed: () => _showAddCategoryDialog(context),
           )
@@ -184,7 +212,7 @@ class ManageCategoriesScreen extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
             if (categoryProvider.error != null) {
-              return Center(child: Text("Hata: ${categoryProvider.error}", style: const TextStyle(color: AppColors.error)));
+              return Center(child: Text("Hata: ${categoryProvider.error}", style: TextStyle(color: theme.colorScheme.error)));
             }
             if (categoryProvider.categories.isEmpty) {
               return Center(
@@ -193,7 +221,7 @@ class ManageCategoriesScreen extends StatelessWidget {
                     child: Text(
                       "Henüz hiç kategori eklenmemiş.\nSağ üstteki '+' ikonuna basarak yeni bir kategori ekleyebilirsiniz.",
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.secondaryText),
+                      style: theme.textTheme.titleMedium,
                     ),
                   )
               );
@@ -204,9 +232,10 @@ class ManageCategoriesScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final category = categoryProvider.categories[index];
                 return Card(
-                  elevation: 1,
-                  margin: const EdgeInsets.symmetric(vertical: 4.0),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: theme.cardTheme.elevation,
+                  margin: theme.cardTheme.margin,
+                  shape: theme.cardTheme.shape,
+                  color: theme.cardTheme.color,
                   child: ListTile(
                     leading: Container(
                       width: 24,
@@ -214,20 +243,20 @@ class ManageCategoriesScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                           color: Color(category.colorValue),
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black.withOpacity(0.1))
+                          border: Border.all(color: theme.dividerColor)
                       ),
                     ),
-                    title: Text(category.name, style: Theme.of(context).textTheme.titleMedium),
+                    title: Text(category.name, style: theme.textTheme.titleMedium),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: Icon(Icons.edit_outlined, color: AppColors.secondaryText.withOpacity(0.8)),
+                          icon: Icon(Icons.edit_outlined, color: theme.iconTheme.color?.withOpacity(0.8)),
                           tooltip: 'Düzenle',
                           onPressed: () => _showEditCategoryDialog(context, category),
                         ),
                         IconButton(
-                          icon: Icon(Icons.delete_outline_rounded, color: AppColors.error.withOpacity(0.8)),
+                          icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.error.withOpacity(0.8)),
                           tooltip: 'Sil',
                           onPressed: () => _confirmDeleteCategory(context, category),
                         ),
