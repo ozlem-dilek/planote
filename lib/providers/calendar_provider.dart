@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/task_model.dart';
+import '../models/category_model.dart';
 import '../services/task_service.dart';
 import '../services/category_service.dart';
-import '../models/category_model.dart';
-import 'task_provider.dart';
+import 'auth_provider.dart';
 
 class CalendarProvider extends ChangeNotifier {
   final TaskService _taskService;
   final CategoryService _categoryService;
-  final TaskProvider _taskProvider;
+  final AuthProvider _authProvider;
+
+  String? get _currentUserId => _authProvider.currentUser?.userId;
 
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay;
@@ -19,25 +22,30 @@ class CalendarProvider extends ChangeNotifier {
   String? _errorLoadingTasks;
   bool _isLoadingMarkers = false;
 
-  CalendarProvider(this._taskService, this._categoryService, this._taskProvider)
+  CalendarProvider(this._taskService, this._categoryService, this._authProvider)
       : _selectedDay = DateTime.now() {
-    _taskProvider.addListener(_onTaskProviderChanged);
-    _initializeCalendar();
+    _authProvider.addListener(_onAuthStateChanged);
+    _initializeCalendarData();
   }
 
-  void _initializeCalendar() {
-    loadTasksForDay(_selectedDay);
-    loadTaskMarkersForMonth(_focusedDay);
+  void _initializeCalendarData() {
+    if (_currentUserId != null) {
+      loadTasksForDay(_selectedDay);
+      loadTaskMarkersForMonth(_focusedDay);
+    } else {
+      _tasksForSelectedDay = [];
+      _monthlyTaskMarkers = {};
+      notifyListeners();
+    }
   }
 
-  void _onTaskProviderChanged() {
-    loadTaskMarkersForMonth(_focusedDay);
-    loadTasksForDay(_selectedDay);
+  void _onAuthStateChanged() {
+    _initializeCalendarData();
   }
 
   @override
   void dispose() {
-    _taskProvider.removeListener(_onTaskProviderChanged);
+    _authProvider.removeListener(_onAuthStateChanged);
     super.dispose();
   }
 
@@ -61,12 +69,18 @@ class CalendarProvider extends ChangeNotifier {
   }
 
   Future<void> loadTasksForDay(DateTime day) async {
+    if (_currentUserId == null) {
+      _tasksForSelectedDay = [];
+      _isLoadingTasks = false;
+      notifyListeners();
+      return;
+    }
     _isLoadingTasks = true;
     _errorLoadingTasks = null;
     notifyListeners();
 
     try {
-      List<TaskModel> allTasksForDay = _taskService.getTasksForDate(day);
+      List<TaskModel> allTasksForDay = _taskService.getTasksForDate(_currentUserId!, day);
       _tasksForSelectedDay = allTasksForDay.where((task) => !task.isCompleted).toList();
       _sortTasks(_tasksForSelectedDay);
     } catch (e) {
@@ -79,28 +93,33 @@ class CalendarProvider extends ChangeNotifier {
   }
 
   Future<void> loadTaskMarkersForMonth(DateTime monthDate) async {
+    if (_currentUserId == null) {
+      _monthlyTaskMarkers = {};
+      _isLoadingMarkers = false;
+      notifyListeners();
+      return;
+    }
     _isLoadingMarkers = true;
     notifyListeners();
 
     final Map<DateTime, List<Color>> newMarkers = {};
     try {
-      final tasksInMonth = _taskService.getTasksForMonth(monthDate.year, monthDate.month);
-      final allCategories = _categoryService.getAllCategories();
+      final tasksInMonth = _taskService.getTasksForMonthForUser(_currentUserId!, monthDate.year, monthDate.month);
+      final allCategories = _categoryService.getAllCategoriesForUser(_currentUserId!);
 
       for (var task in tasksInMonth) {
         if (task.isCompleted) continue;
 
-        DateTime currentDateToMark = task.startDateTime ?? task.endDateTime!;
-        DateTime taskLoopEndDate = task.endDateTime ?? task.startDateTime!;
-
-        DateTime dayToMark = DateUtils.dateOnly(currentDateToMark);
-        DateTime endDayToMark = DateUtils.dateOnly(taskLoopEndDate);
+        DateTime currentDateToMark = DateUtils.dateOnly(task.startDateTime ?? task.endDateTime!);
+        DateTime taskLoopEndDate = DateUtils.dateOnly(task.endDateTime ?? task.startDateTime!);
 
         DateTime firstDayOfCurrentMonth = DateUtils.dateOnly(DateTime(monthDate.year, monthDate.month, 1));
         DateTime lastDayOfCurrentMonth = DateUtils.dateOnly(DateTime(monthDate.year, monthDate.month + 1, 0));
 
-        while(!dayToMark.isAfter(endDayToMark)){
-          if(!dayToMark.isBefore(firstDayOfCurrentMonth) && !dayToMark.isAfter(lastDayOfCurrentMonth)){
+        DateTime dayIterator = currentDateToMark;
+
+        while(!dayIterator.isAfter(taskLoopEndDate)){
+          if(!dayIterator.isBefore(firstDayOfCurrentMonth) && !dayIterator.isAfter(lastDayOfCurrentMonth)){
             CategoryModel? category;
             try {
               category = allCategories.firstWhere((cat) => cat.id == task.categoryId);
@@ -108,7 +127,7 @@ class CalendarProvider extends ChangeNotifier {
               category = null;
             }
             final color = category != null ? Color(category.colorValue) : Colors.grey;
-            final normalizedDayKey = DateTime(dayToMark.year, dayToMark.month, dayToMark.day);
+            final normalizedDayKey = DateTime(dayIterator.year, dayIterator.month, dayIterator.day);
 
             if (newMarkers.containsKey(normalizedDayKey)) {
               if (!newMarkers[normalizedDayKey]!.contains(color)) {
@@ -118,12 +137,13 @@ class CalendarProvider extends ChangeNotifier {
               newMarkers[normalizedDayKey] = [color];
             }
           }
-          if(DateUtils.isSameDay(dayToMark, endDayToMark)) break;
-          dayToMark = DateUtils.addDaysToDate(dayToMark, 1);
+          if(DateUtils.isSameDay(dayIterator, taskLoopEndDate)) break;
+          dayIterator = DateUtils.addDaysToDate(dayIterator, 1);
         }
       }
       _monthlyTaskMarkers = newMarkers;
     } catch (e) {
+      // Hata yönetimi
     } finally {
       _isLoadingMarkers = false;
       notifyListeners();
@@ -136,11 +156,16 @@ class CalendarProvider extends ChangeNotifier {
     _selectedDay = newSelectedDay;
     _focusedDay = newFocusedDay;
 
-    loadTasksForDay(newSelectedDay);
-
-    if (monthChanged) {
-      loadTaskMarkersForMonth(newFocusedDay);
+    if (_currentUserId != null) {
+      loadTasksForDay(newSelectedDay);
+      if (monthChanged) {
+        loadTaskMarkersForMonth(newFocusedDay);
+      } else {
+        notifyListeners();
+      }
     } else {
+      _tasksForSelectedDay = [];
+      _monthlyTaskMarkers = {};
       notifyListeners();
     }
   }
@@ -148,23 +173,27 @@ class CalendarProvider extends ChangeNotifier {
   void changeFocusedDay(DateTime newFocusedDay) {
     if (!DateUtils.isSameMonth(_focusedDay, newFocusedDay)) {
       _focusedDay = newFocusedDay;
-      notifyListeners();
-      loadTaskMarkersForMonth(newFocusedDay);
-      // TODO: Ay değiştiğinde o ay için task işaretlerini (noktaları) yükle
+      if (_currentUserId != null) {
+        loadTaskMarkersForMonth(newFocusedDay);
+      } else {
+        _monthlyTaskMarkers = {};
+        notifyListeners();
+      }
     }
   }
 
   Future<void> toggleTaskCompletionOnCalendar(String taskId) async {
+    if (_currentUserId == null) return;
     _isLoadingTasks = true;
     _errorLoadingTasks = null;
     notifyListeners();
 
     try {
-      await _taskService.toggleTaskCompletion(taskId);
+      await _taskService.toggleTaskCompletion(taskId, _currentUserId!);
       await loadTasksForDay(_selectedDay);
-      // await loadTaskMarkersForMonth(_focusedDay); //  _onTaskProviderChanged tarafından tetiklenecek
+      await loadTaskMarkersForMonth(_focusedDay);
     } catch (e) {
-      _errorLoadingTasks = "Görev durumu güncellenirken hata oluştu.";
+      _errorLoadingTasks = "Görev durumu güncellenirken bir sorun oluştu.";
     } finally {
       _isLoadingTasks = false;
       notifyListeners();

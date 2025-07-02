@@ -19,7 +19,7 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   int _selectedChipIndex = 1;
-  final List<String> _chipLabels = ["Planning", "Calendar"];
+  final List<String> _chipLabels = ["Görevlerim"];
 
   String _getDayName(int weekday, {String locale = 'tr'}) {
     if (locale == 'tr') {
@@ -149,7 +149,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       isSelected: _selectedChipIndex == index,
                       onTap: () {
                         setState(() { _selectedChipIndex = index; });
-                        // TODO: Bu chiplerin işlevselliğini Provider ile bağla
+                        // TODO: Bu chiplerin işlevselliğini Provider ile bağla (ilerleyen süreçte)
                       }),
                 );
               },
@@ -359,19 +359,6 @@ class _WavyDecorationSection extends StatelessWidget {
         painter: WavyLinePainter(
           waveColor1: theme.brightness == Brightness.light ? AppColors.wavyBlueish : AppColors.wavyBlueish.withOpacity(0.15),
           waveColor2: theme.brightness == Brightness.light ? AppColors.wavyGreenish.withOpacity(0.7) : AppColors.wavyGreenish.withOpacity(0.2),
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned(
-                top: -8,
-                left: MediaQuery.of(context).size.width * 0.22,
-                child: Icon(Icons.ac_unit, color: (theme.brightness == Brightness.light ? AppColors.wavyBlueish : AppColors.wavyBlueish.withOpacity(0.15)).withOpacity(0.9), size: 18)),
-            Positioned(
-                top: 0,
-                left: MediaQuery.of(context).size.width * 0.32,
-                child: Icon(Icons.drag_handle_rounded, color: (theme.brightness == Brightness.light ? AppColors.wavyBlueish : AppColors.wavyBlueish.withOpacity(0.15)).withOpacity(0.9), size: 18)),
-          ],
         ),
       ),
     );

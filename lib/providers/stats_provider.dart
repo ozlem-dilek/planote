@@ -6,10 +6,15 @@ import '../models/category_model.dart';
 import '../services/task_service.dart';
 import '../services/category_service.dart';
 import '../../core/constants/app_colors.dart';
+import 'auth_provider.dart';
+
 
 class StatsProvider extends ChangeNotifier {
   final TaskService _taskService;
   final CategoryService _categoryService;
+  final AuthProvider _authProvider;
+
+  String? get _currentUserId => _authProvider.currentUser?.userId;
 
   bool _isLoading = false;
   String? _error;
@@ -28,7 +33,6 @@ class StatsProvider extends ChangeNotifier {
   final List<String> _last6MonthsLabels = [];
   double _maxMonthlyCompletedTasks = 0;
 
-
   bool get isLoading => _isLoading;
   String? get error => _error;
   List<PieChartSectionData> get completionRateSections => _completionRateSections;
@@ -43,21 +47,59 @@ class StatsProvider extends ChangeNotifier {
   double get maxMonthlyCompletedTasks => _maxMonthlyCompletedTasks;
 
 
-  StatsProvider(this._taskService, this._categoryService) {
-    fetchAllStats();
+  StatsProvider(this._taskService, this._categoryService, this._authProvider) {
+    _authProvider.addListener(_onAuthStateChanged);
+    _loadInitialDataOrClear();
   }
 
+  void _onAuthStateChanged() {
+    _loadInitialDataOrClear();
+  }
+
+  void _loadInitialDataOrClear() {
+    if (_currentUserId != null) {
+      fetchAllStats();
+    } else {
+      _isLoading = false;
+      _error = null;
+      _completionRateSections = [];
+      _totalTasks = 0;
+      _completedTasks = 0;
+      _tasksByCategoryGroups = [];
+      _allCategoriesForChartTitles = [];
+      _weeklyActivityGroups = [];
+      _last7DaysLabels.clear();
+      _monthlyCompletionSpots = [];
+      _last6MonthsLabels.clear();
+      _maxMonthlyCompletedTasks = 0;
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _authProvider.removeListener(_onAuthStateChanged);
+    super.dispose();
+  }
+
+
   Future<void> fetchAllStats() async {
+    if (_currentUserId == null) {
+      _isLoading = false;
+      _error = "İstatistikleri görmek için giriş yapmalısınız.";
+      notifyListeners();
+      return;
+    }
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final allTasks = _taskService.getAllTasks();
-      _allCategoriesForChartTitles = _categoryService.getAllCategories();
+      final allTasks = _taskService.getAllTasksForUser(_currentUserId!);
+      final userCategories = _categoryService.getAllCategoriesForUser(_currentUserId!);
 
       _prepareCompletionRateStats(allTasks);
-      _prepareTasksByCategoryStats(allTasks, _allCategoriesForChartTitles);
+      _prepareTasksByCategoryStats(allTasks, userCategories);
       _prepareWeeklyActivityStats(allTasks);
       _prepareMonthlyCompletionStats(allTasks);
 
@@ -126,6 +168,8 @@ class StatsProvider extends ChangeNotifier {
 
   void _prepareTasksByCategoryStats(List<TaskModel> tasks, List<CategoryModel> categories) {
     Map<String, int> tasksCountMap = {};
+    if (_currentUserId == null) return;
+
     for (var category in categories) {
       tasksCountMap[category.id] = 0;
     }
@@ -133,7 +177,7 @@ class StatsProvider extends ChangeNotifier {
       if(tasksCountMap.containsKey(task.categoryId)) {
         tasksCountMap[task.categoryId] = tasksCountMap[task.categoryId]! + 1;
       } else {
-        tasksCountMap['unknown'] = (tasksCountMap['unknown'] ?? 0) + 1;
+        tasksCountMap['other_${_currentUserId!}'] = (tasksCountMap['other_${_currentUserId!}'] ?? 0) + 1;
       }
     }
 
@@ -162,13 +206,14 @@ class StatsProvider extends ChangeNotifier {
       }
     });
 
-    if (tasksCountMap.containsKey('unknown') && (tasksCountMap['unknown'] ?? 0) > 0) {
+    String otherCategoryKey = 'other_${_currentUserId!}';
+    if (tasksCountMap.containsKey(otherCategoryKey) && (tasksCountMap[otherCategoryKey] ?? 0) > 0) {
       _tasksByCategoryGroups.add(
         BarChartGroupData(
           x: i,
           barRods: [
             BarChartRodData(
-              toY: (tasksCountMap['unknown']!).toDouble(),
+              toY: (tasksCountMap[otherCategoryKey]!).toDouble(),
               color: AppColors.disabled,
               width: 16,
               borderRadius: const BorderRadius.only(topLeft: Radius.circular(4), topRight: Radius.circular(4)),
@@ -176,7 +221,7 @@ class StatsProvider extends ChangeNotifier {
           ],
         ),
       );
-      categoriesWithData.add(CategoryModel(id: 'unknown', name: 'Diğer', colorValue: AppColors.disabled.value));
+      categoriesWithData.add(CategoryModel(id: otherCategoryKey, name: 'Diğer', colorValue: AppColors.disabled.value, userId: _currentUserId!));
       i++;
     }
     _allCategoriesForChartTitles = categoriesWithData;
@@ -236,19 +281,20 @@ class StatsProvider extends ChangeNotifier {
     Map<int, double> monthlyCompletedCounts = {};
 
     for (int i = 0; i < 6; i++) {
-      final targetMonth = DateTime(now.year, now.month - (5 - i), 1);
-      _last6MonthsLabels.add(DateFormat('MMM', 'tr_TR').format(targetMonth));
+      final targetMonthDateTime = DateTime(now.year, now.month - (5 - i), 1);
+      _last6MonthsLabels.add(DateFormat('MMM', 'tr_TR').format(targetMonthDateTime));
       monthlyCompletedCounts[i] = 0;
     }
 
     for (var task in allTasks) {
       if (task.isCompleted && task.completedAt != null) {
         for (int i = 0; i < 6; i++) {
-          final referenceMonthStart = DateTime(now.year, now.month - (5 - i), 1);
-          final referenceMonthEnd = DateTime(now.year, now.month - (5 - i) + 1, 0, 23, 59, 59);
+          final int monthOffset = 5 - i;
+          final DateTime monthStart = DateTime(now.year, now.month - monthOffset, 1);
+          final DateTime monthEnd = DateTime(now.year, now.month - monthOffset + 1, 0, 23, 59, 59);
 
-          if (task.completedAt!.isAfter(referenceMonthStart.subtract(const Duration(microseconds: 1))) &&
-              task.completedAt!.isBefore(referenceMonthEnd.add(const Duration(microseconds: 1)))) {
+          if (task.completedAt!.isAfter(monthStart.subtract(const Duration(microseconds: 1))) &&
+              task.completedAt!.isBefore(monthEnd.add(const Duration(microseconds: 1)))) {
             monthlyCompletedCounts[i] = (monthlyCompletedCounts[i] ?? 0) + 1;
             if (monthlyCompletedCounts[i]! > _maxMonthlyCompletedTasks) {
               _maxMonthlyCompletedTasks = monthlyCompletedCounts[i]!;

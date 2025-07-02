@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,7 @@ import '../../models/category_model.dart';
 import '../../models/task_model.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/task_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../common_widgets/add_category_dialog.dart';
 
 class EditTaskScreen extends StatefulWidget {
@@ -82,6 +84,20 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     DateTime? initialDate,
     TimeOfDay? initialTime,
   }) async {
+    final ThemeData currentTheme = Theme.of(context);
+    final ColorScheme pickerColorScheme = currentTheme.brightness == Brightness.light
+        ? const ColorScheme.light(
+      primary: AppColors.primary,
+      onPrimary: AppColors.whiteText,
+      onSurface: AppColors.primaryText,
+    )
+        : const ColorScheme.dark(
+      primary: AppColors.primaryLight,
+      onPrimary: AppColors.blackText,
+      onSurface: AppColors.whiteText,
+      surface: AppColors.primaryDark,
+    );
+
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: initialDate ?? DateTime.now(),
@@ -90,13 +106,9 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       locale: const Locale('tr', 'TR'),
       builder: (context, child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: AppColors.whiteText,
-              onSurface: AppColors.primaryText,
-            ),
-            dialogBackgroundColor: AppColors.screenBackground,
+          data: currentTheme.copyWith(
+              colorScheme: pickerColorScheme,
+              dialogBackgroundColor: currentTheme.scaffoldBackgroundColor
           ),
           child: child!,
         );
@@ -110,14 +122,8 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         initialTime: initialTime ?? TimeOfDay.fromDateTime(initialDate ?? DateTime.now()),
         builder: (context, child) {
           return Theme(
-            data: ThemeData.light().copyWith(
-              colorScheme: const ColorScheme.light(
-                primary: AppColors.primary,
-                onPrimary: AppColors.whiteText,
-                onSurface: AppColors.primaryText,
-                surface: AppColors.screenBackground,
-              ),
-              dialogBackgroundColor: AppColors.screenBackground,
+            data: currentTheme.copyWith(
+              colorScheme: pickerColorScheme.copyWith(surface: currentTheme.cardColor),
             ),
             child: child!,
           );
@@ -162,6 +168,17 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   void _updateTask() async {
     if (_formKey.currentState!.validate()) {
       final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final String? currentUserId = authProvider.currentUser?.userId;
+
+      if (currentUserId == null || widget.taskToEdit.userId != currentUserId) {
+        if(mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Bu görevi güncelleme yetkiniz yok.')),
+          );
+        }
+        return;
+      }
 
       DateTime? finalStartDateTime;
       if (_selectedStartDate != null) {
@@ -180,37 +197,21 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       }
 
       if (finalEndDateTime == null) {
-        if(mounted){
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Lütfen bir bitiş tarihi seçin!')),
-          );
-        }
+        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lütfen bir bitiş tarihi seçin!')));
         return;
       }
 
       if (finalStartDateTime != null && finalEndDateTime.isBefore(finalStartDateTime)) {
-        if(mounted){
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Bitiş tarihi, başlangıç tarihinden önce olamaz!')),
-          );
-        }
+        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bitiş tarihi, başlangıç tarihinden önce olamaz!')));
         return;
       }
 
       if (_selectedCategory == null && categoryProvider.categories.isNotEmpty) {
-        if(mounted){
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Lütfen bir kategori seçin!')),
-          );
-        }
+        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lütfen bir kategori seçin!')));
         return;
       }
       if (_selectedCategory == null && categoryProvider.categories.isEmpty) {
-        if(mounted){
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Lütfen önce bir kategori ekleyin veya seçin!')),
-          );
-        }
+        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lütfen önce bir kategori ekleyin veya seçin!')));
         return;
       }
 
@@ -223,6 +224,8 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         categoryId: _selectedCategory!.id,
         isCompleted: widget.taskToEdit.isCompleted,
         createdAt: widget.taskToEdit.createdAt,
+        completedAt: widget.taskToEdit.completedAt,
+        userId: currentUserId,
       );
 
       final taskProvider = Provider.of<TaskProvider>(context, listen: false);
@@ -246,30 +249,31 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
   String _formatDateTime(DateTime? date, TimeOfDay? time) {
     if (date == null) return 'Seçilmedi';
-    if (time == null) return DateFormat('dd MMMM yyyy, EEEE', 'tr_TR').format(date);
+    if (time == null) return DateFormat('dd MMMM y, EEEE', 'tr_TR').format(date);
 
     final dateTime = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    return DateFormat('dd MMMM yyyy, EEEE HH:mm', 'tr_TR').format(dateTime);
+    return DateFormat('dd MMMM y, EEEE HH:mm', 'tr_TR').format(dateTime);
   }
 
   @override
   Widget build(BuildContext context) {
     final categoryProvider = context.watch<CategoryProvider>();
+    final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.screenBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Görevi Düzenle', style: TextStyle(color: AppColors.primaryText)),
-        backgroundColor: AppColors.screenBackground,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primaryText),
+        title: Text('Görevi Düzenle', style: theme.appBarTheme.titleTextStyle),
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        elevation: theme.appBarTheme.elevation,
+        iconTheme: theme.appBarTheme.iconTheme,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: theme.appBarTheme.iconTheme?.color),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check_rounded),
+            icon: Icon(Icons.check_rounded, color: theme.appBarTheme.actionsIconTheme?.color),
             tooltip: 'Kaydet',
             onPressed: _updateTask,
           ),
@@ -282,38 +286,40 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
           children: <Widget>[
             TextFormField(
               controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Görev Başlığı', prefixIcon: Icon(Icons.title_rounded)),
+              style: theme.textTheme.bodyLarge,
+              decoration: InputDecoration(labelText: 'Görev Başlığı', prefixIcon: Icon(Icons.title_rounded, color: theme.inputDecorationTheme.prefixIconColor)),
               validator: (value) => (value == null || value.isEmpty) ? 'Lütfen bir başlık girin' : null,
             ),
             const SizedBox(height: 16.0),
             TextFormField(
               controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Açıklama (Opsiyonel)', prefixIcon: Icon(Icons.description_outlined)),
+              style: theme.textTheme.bodyLarge,
+              decoration: InputDecoration(labelText: 'Açıklama (Opsiyonel)', prefixIcon: Icon(Icons.description_outlined, color: theme.inputDecorationTheme.prefixIconColor)),
               maxLines: 3,
             ),
             const SizedBox(height: 20.0),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.play_circle_outline_rounded, color: AppColors.primary),
-              title: Text('Başlangıç: ${_formatDateTime(_selectedStartDate, _selectedStartTime)}', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primaryText)),
+              leading: Icon(Icons.play_circle_outline_rounded, color: theme.colorScheme.primary),
+              title: Text('Başlangıç: ${_formatDateTime(_selectedStartDate, _selectedStartTime)}', style: theme.textTheme.titleMedium),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                if (_selectedStartDate != null || _selectedStartTime != null) IconButton(icon: const Icon(Icons.clear_rounded, size: 20, color: AppColors.secondaryText), tooltip: 'Temizle', onPressed: (){ setState(() { _selectedStartDate = null; _selectedStartTime = null; }); }),
-                const Icon(Icons.edit_calendar_outlined, color: AppColors.secondaryText),
+                if (_selectedStartDate != null || _selectedStartTime != null) IconButton(icon: Icon(Icons.clear_rounded, size: 20, color: theme.iconTheme.color?.withOpacity(0.7)), tooltip: 'Temizle', onPressed: (){ setState(() { _selectedStartDate = null; _selectedStartTime = null; }); }),
+                Icon(Icons.edit_calendar_outlined, color: theme.iconTheme.color?.withOpacity(0.7)),
               ]),
               onTap: () => _pickDateTime(context: context, isStartDate: true, initialDate: _selectedStartDate, initialTime: _selectedStartTime),
             ),
-            const Divider(),
+            Divider(color: theme.dividerColor),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.check_circle_outline_rounded, color: AppColors.primary),
-              title: Text('Bitiş: ${_formatDateTime(_selectedEndDate, _selectedEndTime)}', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.primaryText)),
+              leading: Icon(Icons.check_circle_outline_rounded, color: theme.colorScheme.primary),
+              title: Text('Bitiş: ${_formatDateTime(_selectedEndDate, _selectedEndTime)}', style: theme.textTheme.titleMedium),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                if (_selectedEndDate != null || _selectedEndTime != null) IconButton(icon: const Icon(Icons.clear_rounded, size: 20, color: AppColors.secondaryText), tooltip: 'Temizle', onPressed: (){ setState(() { _selectedEndDate = null; _selectedEndTime = null; }); }),
-                const Icon(Icons.edit_calendar_outlined, color: AppColors.secondaryText),
+                if (_selectedEndDate != null || _selectedEndTime != null) IconButton(icon: Icon(Icons.clear_rounded, size: 20, color: theme.iconTheme.color?.withOpacity(0.7)), tooltip: 'Temizle', onPressed: (){ setState(() { _selectedEndDate = null; _selectedEndTime = null; }); }),
+                Icon(Icons.edit_calendar_outlined, color: theme.iconTheme.color?.withOpacity(0.7)),
               ]),
               onTap: () => _pickDateTime(context: context, isStartDate: false, initialDate: _selectedEndDate, initialTime: _selectedEndTime),
             ),
-            const Divider(),
+            Divider(color: theme.dividerColor),
             const SizedBox(height: 8),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,16 +330,16 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                       : categoryProvider.error != null && categoryProvider.categories.isEmpty
                       ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20.0),
-                    child: Text("Kategoriler yüklenemedi: ${categoryProvider.error}", style: const TextStyle(color: AppColors.error)),
+                    child: Text("Kategoriler yüklenemedi: ${categoryProvider.error}", style: TextStyle(color: theme.colorScheme.error)),
                   )
                       : DropdownButtonFormField<CategoryModel>(
                     decoration: InputDecoration(
                       labelText: 'Kategori',
-                      prefixIcon: const Icon(Icons.category_outlined),
-                      border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      prefixIcon: Icon(Icons.category_outlined, color: theme.inputDecorationTheme.prefixIconColor),
                       hintText: categoryProvider.categories.isEmpty ? 'Önce kategori ekleyin' : 'Bir kategori seçin',
                     ),
+                    dropdownColor: theme.cardColor,
+                    style: theme.textTheme.titleMedium,
                     value: (_selectedCategory != null && categoryProvider.categories.any((cat) => cat.id == _selectedCategory!.id))
                         ? _selectedCategory
                         : null,
@@ -357,7 +363,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0, top: 4.0),
                   child: IconButton(
-                    icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary, size: 28),
+                    icon: Icon(Icons.add_circle_outline_rounded, color: theme.colorScheme.primary, size: 28),
                     tooltip: 'Yeni Kategori Ekle',
                     onPressed: _showAddCategoryDialog,
                   ),
@@ -365,16 +371,16 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
               ],
             ),
             if (categoryProvider.categories.isEmpty && !categoryProvider.isLoading && categoryProvider.error == null)
-              const Padding(
-                padding: EdgeInsets.only(top: 8.0, left: 4.0),
-                child: Text("Henüz kategori eklenmemiş. '+' ikonuna basarak yeni bir kategori ekleyebilirsiniz.", style: TextStyle(color: AppColors.secondaryText)),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0, left: 4.0),
+                child: Text("Henüz kategori eklenmemiş. '+' ikonuna basarak yeni bir kategori ekleyebilirsiniz.", style: theme.textTheme.bodySmall),
               ),
             const SizedBox(height: 30),
             ElevatedButton.icon(
               icon: const Icon(Icons.save_alt_rounded),
               label: const Text('Değişiklikleri Kaydet'),
               onPressed: _updateTask,
-              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+              style: theme.elevatedButtonTheme.style,
             ),
           ],
         ),

@@ -92,7 +92,7 @@ class TaskProvider extends ChangeNotifier {
 
   void _loadInitialDataOrClear() {
     if (_currentUserId != null) {
-      loadTasksForCategory('all');
+      loadTasksForCategory(_currentUserId!, 'all');
     } else {
       _allFetchedTasks = [];
       _filteredAndSortedTasks = [];
@@ -118,8 +118,8 @@ class TaskProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> loadTasksForCategory(String categoryId) async {
-    if (_currentUserId == null) {
+  Future<void> loadTasksForCategory(String userId, String categoryId) async {
+    if (userId.isEmpty) {
       _allFetchedTasks = [];
       _filteredAndSortedTasks = [];
       _selectedCategoryId = categoryId;
@@ -135,9 +135,9 @@ class TaskProvider extends ChangeNotifier {
 
     try {
       if (categoryId.toLowerCase() == 'all' || categoryId.toLowerCase() == 'tümü') {
-        _allFetchedTasks = _taskService.getAllTasksForUser(_currentUserId!);
+        _allFetchedTasks = _taskService.getAllTasksForUser(userId);
       } else {
-        _allFetchedTasks = _taskService.getTasksByCategoryForUser(_currentUserId!, categoryId);
+        _allFetchedTasks = _taskService.getTasksByCategoryForUser(userId, categoryId);
       }
       _filteredAndSortedTasks = List.from(_allFetchedTasks);
       _sortTasks(_filteredAndSortedTasks);
@@ -182,7 +182,7 @@ class TaskProvider extends ChangeNotifier {
 
     try {
       await _taskService.addNewTask(newTask);
-      await loadTasksForCategory(_selectedCategoryId);
+      await loadTasksForCategory(_currentUserId!, _selectedCategoryId);
     } catch (e) {
       _error = "Yeni görev eklenirken bir sorun oluştu.";
       _isLoading = false;
@@ -202,7 +202,7 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _taskService.updateTask(task, _currentUserId!);
-      await loadTasksForCategory(_selectedCategoryId);
+      await loadTasksForCategory(_currentUserId!, _selectedCategoryId);
     } catch (e) {
       _error = "Görev güncellenirken bir sorun oluştu.";
       _isLoading = false;
@@ -219,7 +219,7 @@ class TaskProvider extends ChangeNotifier {
 
     try {
       await _taskService.toggleTaskCompletion(taskId, _currentUserId!);
-      await loadTasksForCategory(_selectedCategoryId);
+      await loadTasksForCategory(_currentUserId!, _selectedCategoryId);
     } catch (e) {
       _error = "Görev durumu güncellenirken bir sorun oluştu.";
       _isLoading = false;
@@ -234,7 +234,7 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _taskService.deleteTask(taskId, _currentUserId!);
-      await loadTasksForCategory(_selectedCategoryId);
+      await loadTasksForCategory(_currentUserId!, _selectedCategoryId);
     } catch (e) {
       _error = "Görev silinirken bir sorun oluştu.";
       _isLoading = false;

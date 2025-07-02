@@ -28,7 +28,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
       if (currentUserId != null) {
         final taskProvider = Provider.of<TaskProvider>(context, listen: false);
         if (taskProvider.filteredTasks.isEmpty && !taskProvider.isLoading) {
-          taskProvider.loadTasksForCategory(taskProvider.selectedCategoryId);
+          taskProvider.loadTasksForCategory(currentUserId, taskProvider.selectedCategoryId);
         }
 
         final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
@@ -54,7 +54,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     if (categoryProvider.error != null && categoryProvider.categories.isEmpty) {
       return SizedBox(
         height: 42,
-        child: Center(child: Text("Kategoriler yüklenemedi", style: TextStyle(color: Theme.of(context).colorScheme.error))),
+        child: Center(child: Text("Kategoriler yüklenemedi", style: TextStyle(color: AppColors.error))),
       );
     }
 
@@ -68,10 +68,10 @@ class _TodoListScreenState extends State<TodoListScreen> {
           isSelected: taskProvider.selectedCategoryId == 'all',
           onTap: () {
             if (currentUserId != null) {
-              context.read<TaskProvider>().loadTasksForCategory('all');
+              context.read<TaskProvider>().loadTasksForCategory(currentUserId, 'all');
             }
           },
-          activeCategoryColor: taskProvider.selectedCategoryId == 'all' ? Theme.of(context).colorScheme.primary : null,
+          activeCategoryColor: taskProvider.selectedCategoryId == 'all' ? AppColors.primary : null,
         ),
       ),
     );
@@ -85,7 +85,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             isSelected: taskProvider.selectedCategoryId == category.id,
             onTap: () {
               if (currentUserId != null) {
-                context.read<TaskProvider>().loadTasksForCategory(category.id);
+                context.read<TaskProvider>().loadTasksForCategory(currentUserId, category.id);
               }
             },
             activeCategoryColor: Color(category.colorValue),
@@ -108,7 +108,6 @@ class _TodoListScreenState extends State<TodoListScreen> {
   Widget build(BuildContext context) {
     final taskProvider = context.watch<TaskProvider>();
     final categoryProvider = context.watch<CategoryProvider>();
-    final ThemeData theme = Theme.of(context);
 
     final List<TaskModel> pastDueTasks = taskProvider.pastDueUncompletedTasks;
     final List<TaskModel> todaysTasks = taskProvider.todaysTasks;
@@ -119,7 +118,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
     return Column(
       children: [
         Container(
-          color: theme.appBarTheme.backgroundColor ?? AppColors.todoAppBarBackground,
+          color: AppColors.todoAppBarBackground,
           padding: EdgeInsets.only(
             top: MediaQuery.of(context).padding.top + 10,
             left: 4,
@@ -130,31 +129,35 @@ class _TodoListScreenState extends State<TodoListScreen> {
             children: [
               Builder(builder: (buttonContext) {
                 return IconButton(
-                  icon: Icon(Icons.menu, color: theme.appBarTheme.iconTheme?.color ?? AppColors.primaryText, size: 28),
+                  icon: const Icon(Icons.menu, color: AppColors.primaryText, size: 28),
                   onPressed: () => Scaffold.of(buttonContext).openDrawer(),
                   tooltip: 'Menüyü Aç',
                 );
               }),
-              Text(
+              const Text(
                 'Görevler',
-                style: theme.appBarTheme.titleTextStyle,
+                style: TextStyle(
+                  color: AppColors.primaryText,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
               ),
               const Spacer(),
             ],
           ),
         ),
         Container(
-          color: theme.appBarTheme.backgroundColor ?? AppColors.todoAppBarBackground,
+          color: AppColors.todoAppBarBackground,
           padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
           child: _buildCategoryChips(context),
         ),
         Expanded(
           child: Container(
-            color: theme.scaffoldBackgroundColor,
+            color: AppColors.screenBackground,
             child: taskProvider.isLoading && allTaskListsEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : taskProvider.error != null
-                ? Center(child: Text("Hata: ${taskProvider.error}", style: TextStyle(color: theme.colorScheme.error)))
+                ? Center(child: Text("Hata: ${taskProvider.error}", style: const TextStyle(color: AppColors.error)))
                 : (allTaskListsEmpty && !taskProvider.isLoading
                 ? Center(
                 child: Padding(
@@ -163,7 +166,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
                     taskProvider.selectedCategoryId == 'all'
                         ? "Harika! Hiç göreviniz yok gibi görünüyor."
                         : "Bu kategoride gösterilecek görev yok.",
-                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 16),
+                    style: TextStyle(color: AppColors.secondaryText, fontSize: 16),
                     textAlign: TextAlign.center,
                   ),
                 )
@@ -194,12 +197,11 @@ class _TodoListScreenState extends State<TodoListScreen> {
   }
 
   Widget _buildTaskGroup(BuildContext context, String title, List<TaskModel> tasks, CategoryProvider categoryProvider) {
-    final ThemeData theme = Theme.of(context);
     return Card(
-      elevation: theme.cardTheme.elevation ?? 1.0,
-      margin: theme.cardTheme.margin ?? const EdgeInsets.only(bottom: 16.0),
-      shape: theme.cardTheme.shape,
-      color: theme.cardTheme.color,
+      elevation: 1.0,
+      margin: const EdgeInsets.only(bottom: 16.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      color: AppColors.cardBackground,
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -209,8 +211,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
               padding: const EdgeInsets.only(left: 4.0, bottom: 10.0),
               child: Text(
                 title,
-                style: theme.textTheme.titleLarge?.copyWith(
-                    color: title == "Geçmiş Görevler" ? theme.colorScheme.error : theme.textTheme.titleLarge?.color,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: title == "Geçmiş Görevler" ? AppColors.error : AppColors.primaryText,
                     fontWeight: FontWeight.bold,
                     fontSize: 18),
               ),
@@ -218,7 +220,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
             if (tasks.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10.0),
-                child: Text("Bu grupta görev yok.", style: theme.textTheme.bodyMedium),
+                child: Text("Bu grupta görev yok.", style: TextStyle(color: AppColors.secondaryText)),
               )
             else
               ListView.separated(
@@ -248,11 +250,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
   }
 
   Widget _buildTaskItem(BuildContext context, TaskModel task, Color categoryColor, bool isDueSoon, bool isPastDueTaskGroup) {
-    final ThemeData theme = Theme.of(context);
-    final Color? primaryTextColor = theme.textTheme.bodyLarge?.color;
-    final Color? secondaryTextColor = theme.textTheme.bodyMedium?.color;
-    final Color errorColor = theme.colorScheme.error;
-    final Color primaryColor = theme.colorScheme.primary;
+    final authProvider = context.read<AuthProvider>();
+    final String? currentUserId = authProvider.currentUser?.userId;
 
     return Dismissible(
       key: Key(task.id),
@@ -261,19 +260,27 @@ class _TodoListScreenState extends State<TodoListScreen> {
         color: Colors.blue.shade600,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         alignment: Alignment.centerLeft,
-        child: const Icon(Icons.edit_note_outlined, color: Colors.white),
+        child: const Icon(
+          Icons.edit_note_outlined,
+          color: Colors.white,
+        ),
       ),
       secondaryBackground: Container(
         color: Colors.red.shade700,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         alignment: Alignment.centerRight,
-        child: const Icon(Icons.delete_sweep_outlined, color: Colors.white),
+        child: const Icon(
+          Icons.delete_sweep_outlined,
+          color: Colors.white,
+        ),
       ),
       confirmDismiss: (DismissDirection direction) async {
         if (direction == DismissDirection.startToEnd) {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => EditTaskScreen(taskToEdit: task)),
+            MaterialPageRoute(
+              builder: (context) => EditTaskScreen(taskToEdit: task),
+            ),
           );
           return false;
         } else if (direction == DismissDirection.endToStart) {
@@ -284,9 +291,12 @@ class _TodoListScreenState extends State<TodoListScreen> {
                 title: const Text('Görevi Sil'),
                 content: Text('"${task.title}" adlı görevi silmek istediğinize emin misiniz?'),
                 actions: <Widget>[
-                  TextButton(child: const Text('İptal'), onPressed: () => Navigator.of(dialogContext).pop(false)),
                   TextButton(
-                    style: TextButton.styleFrom(foregroundColor: errorColor),
+                    child: const Text('İptal'),
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
                     child: const Text('Sil'),
                     onPressed: () => Navigator.of(dialogContext).pop(true),
                   ),
@@ -300,17 +310,18 @@ class _TodoListScreenState extends State<TodoListScreen> {
       },
       onDismissed: (DismissDirection direction) {
         if (direction == DismissDirection.endToStart) {
-          Provider.of<TaskProvider>(context, listen: false).deleteTask(task.id);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("${task.title} silindi.")),
-          );
+          if(currentUserId != null) {
+            Provider.of<TaskProvider>(context, listen: false).deleteTask(task.id);
+          }
         }
       },
       child: InkWell(
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => EditTaskScreen(taskToEdit: task)),
+            MaterialPageRoute(
+              builder: (context) => EditTaskScreen(taskToEdit: task),
+            ),
           );
         },
         borderRadius: BorderRadius.circular(8),
@@ -335,9 +346,9 @@ class _TodoListScreenState extends State<TodoListScreen> {
                       task.title,
                       style: TextStyle(
                         fontSize: 16,
-                        color: primaryTextColor,
+                        color: AppColors.primaryText,
                         decoration: task.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                        decorationColor: secondaryTextColor,
+                        decorationColor: AppColors.secondaryText,
                       ),
                     ),
                     if (task.endDateTime != null)
@@ -347,7 +358,7 @@ class _TodoListScreenState extends State<TodoListScreen> {
                           DateFormat('dd MMM HH:mm', 'tr_TR').format(task.endDateTime!),
                           style: TextStyle(
                             fontSize: 12,
-                            color: (isDueSoon || isPastDueTaskGroup) && !task.isCompleted ? errorColor : secondaryTextColor,
+                            color: (isDueSoon || isPastDueTaskGroup) && !task.isCompleted ? AppColors.error : AppColors.secondaryText,
                             fontWeight: (isDueSoon || isPastDueTaskGroup) && !task.isCompleted ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
@@ -358,18 +369,20 @@ class _TodoListScreenState extends State<TodoListScreen> {
               if ((isDueSoon || isPastDueTaskGroup) && !task.isCompleted)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: Icon(Icons.warning_amber_rounded, color: errorColor.withOpacity(0.8), size: 20),
+                  child: Icon(Icons.warning_amber_rounded, color: AppColors.error.withOpacity(0.8), size: 20),
                 ),
               InkWell(
                 onTap: () {
-                  context.read<TaskProvider>().toggleTaskCompletion(task.id);
+                  if (currentUserId != null) {
+                    context.read<TaskProvider>().toggleTaskCompletion(task.id);
+                  }
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: Padding(
                   padding: const EdgeInsets.all(6.0),
                   child: Icon(
                     task.isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                    color: task.isCompleted ? primaryColor : secondaryTextColor?.withOpacity(0.5),
+                    color: task.isCompleted ? AppColors.primary : AppColors.secondaryText.withOpacity(0.5),
                     size: 26,
                   ),
                 ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/category_model.dart';
 import '../../providers/category_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../common_widgets/add_category_dialog.dart';
 
 class ManageCategoriesScreen extends StatelessWidget {
@@ -26,9 +27,22 @@ class ManageCategoriesScreen extends StatelessWidget {
 
   Future<void> _showEditCategoryDialog(BuildContext context, CategoryModel categoryToEdit) async {
     final categoryProvider = Provider.of<CategoryProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final String? currentUserId = authProvider.currentUser?.userId;
+
+    if (currentUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kategori düzenlemek için giriş yapmalısınız.")));
+      return;
+    }
+    if (categoryToEdit.userId != currentUserId) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Bu kategoriyi düzenleme yetkiniz yok.")));
+      return;
+    }
+
     final TextEditingController nameController = TextEditingController(text: categoryToEdit.name);
     Color selectedColor = Color(categoryToEdit.colorValue);
     final formKey = GlobalKey<FormState>();
+
 
     final bool? updated = await showDialog<bool>(
       context: context,
@@ -51,8 +65,8 @@ class ManageCategoriesScreen extends StatelessWidget {
                           controller: nameController,
                           style: dialogTheme.textTheme.bodyLarge,
                           decoration: InputDecoration(
-                            labelText: 'Kategori Adı',
-                            labelStyle: dialogTheme.textTheme.bodyMedium,
+                              labelText: 'Kategori Adı',
+                              labelStyle: dialogTheme.textTheme.bodyMedium
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -109,6 +123,7 @@ class ManageCategoriesScreen extends StatelessWidget {
                           id: categoryToEdit.id,
                           name: nameController.text,
                           colorValue: selectedColor.value,
+                          userId: currentUserId,
                         );
                         categoryProvider.updateCategory(updatedCategory).then((_){
                           if (dialogContext.mounted) Navigator.of(dialogContext).pop(true);
@@ -191,7 +206,7 @@ class ManageCategoriesScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('Kategorileri Yönet', style: theme.appBarTheme.titleTextStyle),
         backgroundColor: theme.appBarTheme.backgroundColor,
-        elevation: 0.5,
+        elevation: theme.appBarTheme.elevation,
         iconTheme: theme.appBarTheme.iconTheme,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(

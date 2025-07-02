@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.error!),
-            backgroundColor: AppColors.error,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -49,9 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.screenBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -61,25 +62,29 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('PLANOTE',
-                        style: GoogleFonts.lacquer(
-                          color: AppColors.primary,
-                          fontSize:50,
-
-                        )
-
-                    )],
+                Text(
+                  'PLANOTE',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.lacquer(
+                    textStyle: theme.textTheme.displayMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontSize: 50,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24.0),
+                Text(
+                  'Giriş Yap',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 32.0),
                 TextFormField(
                   controller: _usernameController,
-                  decoration: const InputDecoration(
+                  style: theme.textTheme.bodyLarge,
+                  decoration: InputDecoration(
                     labelText: 'Kullanıcı Adı',
-                    prefixIcon: Icon(Icons.person_outline_rounded),
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person_outline_rounded, color: theme.inputDecorationTheme.prefixIconColor),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -92,15 +97,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
+                  style: theme.textTheme.bodyLarge,
                   decoration: InputDecoration(
                     labelText: 'Şifre',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    border: const OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock_outline_rounded, color: theme.inputDecorationTheme.prefixIconColor),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
+                        _isPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: theme.iconTheme.color,
                       ),
                       onPressed: () {
                         setState(() {
@@ -120,33 +124,35 @@ class _LoginScreenState extends State<LoginScreen> {
                 authProvider.isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
-                      onPressed: _loginUser,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      ),
-                      child: const Text('GİRİŞ YAP'),
-                    ),
+                  onPressed: _loginUser,
+                  style: theme.elevatedButtonTheme.style?.copyWith(
+                    padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16.0)),
+                  ),
+                  child: const Text('GİRİŞ YAP'),
+                ),
                 const SizedBox(height: 16.0),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
                     Text(
                       "Hesabınız yok mu?",
-                      style: TextStyle(color: AppColors.secondaryText),
+                      style: theme.textTheme.bodyMedium,
                     ),
                     TextButton(
-                      child: const Text(
+                      child: Text(
                         'Kayıt Ol',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
                       ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterScreen(),
-                          ),
-                        );
-                      },
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation1, animation2) => const RegisterScreen(),
+                              transitionDuration: Duration.zero,
+                              reverseTransitionDuration: Duration.zero,
+                            ),
+                          );
+                        },
                     ),
                   ],
                 ),

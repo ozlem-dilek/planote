@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
-// import 'login_screen.dart';
+import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -40,12 +39,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      if (success) {
-      } else if (authProvider.error != null) {
+      if (!success && authProvider.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.error!),
-            backgroundColor: AppColors.error,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -55,14 +53,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final ThemeData theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.screenBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Hesap Oluştur', style: TextStyle(color: AppColors.primaryText)),
-        backgroundColor: AppColors.screenBackground,
+        automaticallyImplyLeading: false,
+        title: Text('Hesap Oluştur', style: theme.appBarTheme.titleTextStyle),
+        backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primaryText),
+        iconTheme: theme.appBarTheme.iconTheme,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: theme.appBarTheme.iconTheme?.color),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -76,15 +84,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Icon(
                   Icons.person_add_alt_1_outlined,
                   size: 80,
-                  color: AppColors.primary,
+                  color: theme.colorScheme.primary,
                 ),
                 const SizedBox(height: 24.0),
+                Text(
+                  'Yeni Hesap Oluştur',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 32.0),
                 TextFormField(
                   controller: _usernameController,
-                  decoration: const InputDecoration(
+                  style: theme.textTheme.bodyLarge,
+                  decoration: InputDecoration(
                     labelText: 'Kullanıcı Adı',
-                    prefixIcon: Icon(Icons.person_outline_rounded),
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person_outline_rounded, color: theme.inputDecorationTheme.prefixIconColor),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -100,13 +114,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
+                  style: theme.textTheme.bodyLarge,
+                  decoration: InputDecoration(
                     labelText: 'E-posta (Opsiyonel)',
-                    prefixIcon: Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email_outlined, color: theme.inputDecorationTheme.prefixIconColor),
                   ),
                   validator: (value) {
-                    if (value != null && value.isNotEmpty && !value.contains('@')) {
+                    if (value != null && value.trim().isNotEmpty && !value.contains('@')) {
                       return 'Lütfen geçerli bir e-posta girin.';
                     }
                     return null;
@@ -116,12 +130,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
+                  style: theme.textTheme.bodyLarge,
                   decoration: InputDecoration(
                     labelText: 'Şifre',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    border: const OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock_outline_rounded, color: theme.inputDecorationTheme.prefixIconColor),
                     suffixIcon: IconButton(
-                      icon: Icon(_isPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                      icon: Icon(_isPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: theme.iconTheme.color),
                       onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
                     ),
                   ),
@@ -139,12 +153,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: !_isConfirmPasswordVisible,
+                  style: theme.textTheme.bodyLarge,
                   decoration: InputDecoration(
                     labelText: 'Şifre Tekrar',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    border: const OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock_outline_rounded, color: theme.inputDecorationTheme.prefixIconColor),
                     suffixIcon: IconButton(
-                      icon: Icon(_isConfirmPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                      icon: Icon(_isConfirmPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: theme.iconTheme.color),
                       onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
                     ),
                   ),
@@ -163,8 +177,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
                   onPressed: _registerUser,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  style: theme.elevatedButtonTheme.style?.copyWith(
+                    padding: MaterialStateProperty.all(const EdgeInsets.symmetric(vertical: 16.0)),
                   ),
                   child: const Text('KAYIT OL'),
                 ),
@@ -172,11 +186,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Text("Zaten hesabınız var mı?", style: TextStyle(color: AppColors.secondaryText)),
+                    Text("Zaten hesabınız var mı?", style: theme.textTheme.bodyMedium),
                     TextButton(
-                      child: const Text('Giriş Yap', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text('Giriş Yap', style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
                       onPressed: () {
-                        Navigator.pop(context);
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        } else {
+                          Navigator.pushReplacement(
+                            context,
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation1, animation2) => const LoginScreen(),
+                              transitionDuration: Duration.zero,
+                              reverseTransitionDuration: Duration.zero,
+                            ),
+                          );
+                        }
                       },
                     ),
                   ],

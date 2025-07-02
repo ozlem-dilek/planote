@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
-import 'view/screens/app_shell.dart';
-import 'view/screens/login_screen.dart';
+import 'views/screens/app_shell.dart';
+import 'views/screens/login_screen.dart';
 
 import 'models/category_model.dart';
 import 'models/task_model.dart';
@@ -46,7 +46,7 @@ void main() async {
   await Hive.openBox<TaskModel>(tasksBoxName);
   await Hive.openBox<UserModel>(usersBoxName);
 
-  // TODO: Uygulama ilk kez çalışıyorsa veya yeni kullanıcı için varsayılan kategoriler eklenebilir (CategoryService içinde)
+  // TODO: Uygulama ilk kez çalışıyorsa veya yeni kullanıcı için varsayılan kategorileri ekleyebilirsiniz (CategoryService içinde)
 
   runApp(const MyApp());
 }
@@ -90,7 +90,6 @@ class MyApp extends StatelessWidget {
             context.read<TaskService>(),
             context.read<CategoryService>(),
             context.read<AuthProvider>(),
-            context.read<TaskProvider>(),
           ),
         ),
         ChangeNotifierProvider<StatsProvider>(
